@@ -9,7 +9,7 @@ jake.task('start', function() {
     '--name=' + shellescape([config.application.name]),
   ].join(' ');
   exec(command);
-  console.log('start');
+  console.log(command);
 });
 
 jake.task('stop', function() {
@@ -18,5 +18,14 @@ jake.task('stop', function() {
     shellescape([config.application.name]),
   ].join(' ');
   exec(command);
-  console.log('stop');
+  console.log(command);
+});
+
+jake.task('restart', function() {
+  var command = [
+    'pm2', 'restart',
+    shellescape([config.application.name]),
+  ].join(' ');
+  exec(command);
+  console.log(command);
 });
