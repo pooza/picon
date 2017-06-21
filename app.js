@@ -1,10 +1,12 @@
 var config = require('config').config;
+var log = require('bslogger');
 var fs = require('fs');
 var crypto = require('crypto');
 var gm = require('gm').subClass({imageMagick: true});;
 var app = require('express')();
 const ROOT_DIR = __dirname;
 
+log.name = config.application.name;
 var server = app.listen(config.server.port)
 var message = {request:{}, response:{}};
 
@@ -32,23 +34,31 @@ app.get('/convert', function (request, response, next) {
     fs.readFile(path, function (error, contents) {
       if (error) {
         message.error = error.message;
+        log.error(JSON.stringify(message));
         response.status(404);
         response.json(message);
       }
+      delete message.error;
+      message.response.sent = path;
+      log.info(JSON.stringify(message));
       response.header('Content-Type', 'image/png');
       response.end(contents);
     })
   }
 
   message.request.path = request.path;
+  message.request.params = request.query;
   var params = request.query;
   params.pixel = (params.pixel || 100);
   params.background_color = (params.background_color || 'white');
+  message.request.params = params;
 
   if (!params.path) {
     message.error = 'pathが未設定です。';
+    log.info(JSON.stringify(message));
     response.status(404);
     response.json(message);
+    return;
   }
   var dest = getDestPath(params);
   if (isExist(dest)) {
@@ -66,13 +76,19 @@ app.get('/convert', function (request, response, next) {
 });
 
 app.use(function (request, response, next) {
+  message.request.path = request.path;
+  message.request.params = request.query;
   message.error = 'Not Found';
+  log.error(JSON.stringify(message));
   response.status(404);
   response.json(message);
 });
 
 app.use(function (error, request, response, next) {
-  message.error = error + '';
+  message.request.path = request.path;
+  message.request.params = request.query;
+  message.error = error;
+  log.error(JSON.stringify(message));
   response.status(500);
   response.json(message);
 });
