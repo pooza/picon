@@ -34,13 +34,13 @@ app.get('/convert', function (request, response, next) {
     fs.readFile(path, function (error, contents) {
       if (error) {
         message.error = error.message;
-        log.error(JSON.stringify(message));
+        log.error(message);
         response.status(404);
         response.json(message);
       }
       delete message.error;
       message.response.sent = path;
-      log.info(JSON.stringify(message));
+      log.info(message);
       response.header('Content-Type', 'image/png');
       response.end(contents);
     })
@@ -55,7 +55,7 @@ app.get('/convert', function (request, response, next) {
 
   if (!params.path) {
     message.error = 'pathが未設定です。';
-    log.info(JSON.stringify(message));
+    log.info(message);
     response.status(404);
     response.json(message);
     return;
@@ -70,6 +70,7 @@ app.get('/convert', function (request, response, next) {
       .background(params.background_color)
       .extent(params.pixel, params.pixel);
     image.write(dest, function () {
+      log.info({'created': dest});
       output(dest);
     });
   }
@@ -79,7 +80,7 @@ app.use(function (request, response, next) {
   message.request.path = request.path;
   message.request.params = request.query;
   message.error = 'Not Found';
-  log.error(JSON.stringify(message));
+  log.error(message);
   response.status(404);
   response.json(message);
 });
@@ -88,7 +89,7 @@ app.use(function (error, request, response, next) {
   message.request.path = request.path;
   message.request.params = request.query;
   message.error = error;
-  log.error(JSON.stringify(message));
+  log.error(message);
   response.status(500);
   response.json(message);
 });
