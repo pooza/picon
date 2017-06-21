@@ -5,10 +5,8 @@ var config = require('config').config;
 
 jake.task('start', function() {
   var command = [
-    'pm2',
-    'start',
-    'app.js',
-    '--name=' + shellescape([config.application.name])
+    'pm2', 'start', 'app.js',
+    '--name=' + shellescape([config.application.name]),
   ].join(' ');
   exec(command);
   console.log('start');
@@ -16,9 +14,8 @@ jake.task('start', function() {
 
 jake.task('stop', function() {
   var command = [
-    'pm2',
-    'stop',
-    shellescape([config.application.name])
+    'pm2', 'stop',
+    shellescape([config.application.name]),
   ].join(' ');
   exec(command);
   console.log('stop');
