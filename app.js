@@ -1,6 +1,8 @@
 var config = require('config').config;
 var fs = require('fs');
+var gm = require('gm').subClass({imageMagick: true});;
 var app = require('express')();
+const ROOT_DIR = __dirname;
 
 var server = app.listen(config.server.port, function () {
   console.log('port:' + server.address().port);
@@ -20,14 +22,22 @@ app.get('/convert', function (request, response, next) {
     message.error = 'pathが未設定です。';
     response.json(message);
   }
-  fs.readFile(params.path, function (error, data) {
-    if (error) {
-      response.status(404);
-      message.error = error.message;
-      response.json(message);
-    }
-    response.json(data);
-  })
+  var dest = ROOT_DIR + '/images/out.png';
+  var image = gm(params.path)
+    .resize(params.pixel, params.pixel)
+    .gravity('Center')
+    .background(params.background_color)
+    .extent(params.pixel, params.pixel);
+  image.write(dest, function (error) {
+    fs.readFile(dest, function (error, data) {
+      if (error) {
+        response.status(404);
+        message.error = error.message;
+        response.json(message);
+      }
+      response.end(data);
+    })
+  });
 });
 
 app.use(function (request, response, next) {

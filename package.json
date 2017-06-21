@@ -2,6 +2,7 @@
   "dependencies": {
     "config": "^1.26.1",
     "express": "^4.15.3",
+    "gm": "^1.23.0",
     "jake": "^8.0.15",
     "js-yaml": "^3.8.4",
     "shell-escape": "^0.2.0"
