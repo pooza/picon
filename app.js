@@ -30,7 +30,8 @@ app.get('/convert', function (request, response, next) {
   function getDestPath (params) {
     const sha1 = crypto.createHash('sha1');
     sha1.update([
-      params.pixel,
+      params.width,
+      params.height,
       params.background_color,
       fs.readFileSync(params.path),
     ].join(' '));
@@ -63,7 +64,8 @@ app.get('/convert', function (request, response, next) {
   }
 
   const params = Object.assign({}, request.query);
-  params.pixel = (params.pixel || 100);
+  params.width = (params.width || 100);
+  params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request.params = params;
   message.request.path = request.path;
@@ -80,10 +82,10 @@ app.get('/convert', function (request, response, next) {
     output(dest);
   } else {
     const image = gm(params.path)
-      .resize(params.pixel, params.pixel)
+      .resize(params.width, params.height)
       .gravity('Center')
       .background(params.background_color)
-      .extent(params.pixel, params.pixel);
+      .extent(params.width, params.height);
     image.write(dest, function () {
       log.info({'created': dest});
       output(dest);
