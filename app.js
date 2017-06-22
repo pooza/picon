@@ -46,12 +46,11 @@ app.get('/convert', function (request, response, next) {
     })
   }
 
-  message.request.path = request.path;
-  message.request.params = request.query;
   var params = request.query;
   params.pixel = (params.pixel || 100);
   params.background_color = (params.background_color || 'white');
   message.request.params = params;
+  message.request.path = request.path;
 
   if (!params.path) {
     message.error = 'pathが未設定です。';
