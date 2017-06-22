@@ -1,14 +1,29 @@
+const ROOT_DIR = __dirname;
 var config = require('config').config;
 var log = require('bslogger');
 var fs = require('fs');
 var crypto = require('crypto');
+var path = require('path');
+var sprintf = require('sprintf-js');
 var gm = require('gm').subClass({imageMagick: true});;
 var app = require('express')();
-const ROOT_DIR = __dirname;
 
 log.name = config.application.name;
 var server = app.listen(config.server.port)
 var message = {request:{}, response:{}};
+var package = JSON.parse(
+  fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')
+);
+log.info({
+  'message': 'starting...',
+  'package': {
+    'name': package.name,
+    'version': package.version,
+  },
+  'server': {
+    'port': config.server.port,
+  },
+});
 
 app.get('/convert', function (request, response, next) {
   function getDestPath (params) {
@@ -18,7 +33,7 @@ app.get('/convert', function (request, response, next) {
       params.background_color,
       fs.readFileSync(params.path),
     ].join(' '));
-    return ROOT_DIR + '/images/' + sha1.digest('hex') + '.png';
+    return path.join(ROOT_DIR, 'images', sha1.digest('hex') + '.png');
   }
 
   function isExist (path) {
