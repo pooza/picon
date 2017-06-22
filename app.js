@@ -1,17 +1,17 @@
 'use strict';
 const ROOT_DIR = __dirname;
-var config = require('config').config;
-var log = require('bslogger');
-var fs = require('fs');
-var crypto = require('crypto');
-var path = require('path');
-var sprintf = require('sprintf-js');
-var gm = require('gm').subClass({imageMagick: true});;
-var app = require('express')();
+const config = require('config').config;
+const log = require('bslogger');
+const fs = require('fs');
+const crypto = require('crypto');
+const path = require('path');
+const sprintf = require('sprintf-js');
+const gm = require('gm').subClass({imageMagick: true});;
+const app = require('express')();
 
 log.name = config.application.name;
-var server = app.listen(config.server.port)
-var message = {request:{}, response:{}};
+const server = app.listen(config.server.port)
+const message = {request:{}, response:{}};
 config.package = JSON.parse(
   fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')
 );
@@ -28,7 +28,7 @@ log.info({
 
 app.get('/convert', function (request, response, next) {
   function getDestPath (params) {
-    var sha1 = crypto.createHash('sha1');
+    const sha1 = crypto.createHash('sha1');
     sha1.update([
       params.pixel,
       params.background_color,
@@ -62,7 +62,7 @@ app.get('/convert', function (request, response, next) {
     })
   }
 
-  var params = request.query;
+  const params = Object.assign({}, request.query);
   params.pixel = (params.pixel || 100);
   params.background_color = (params.background_color || 'white');
   message.request.params = params;
@@ -75,11 +75,11 @@ app.get('/convert', function (request, response, next) {
     response.json(message);
     return;
   }
-  var dest = getDestPath(params);
+  const dest = getDestPath(params);
   if (isExist(dest)) {
     output(dest);
   } else {
-    var image = gm(params.path)
+    const image = gm(params.path)
       .resize(params.pixel, params.pixel)
       .gravity('Center')
       .background(params.background_color)
