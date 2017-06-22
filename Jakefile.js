@@ -1,11 +1,11 @@
 'use strict';
-var jake = require('jake');
-var exec = require('child_process').exec;
-var shellescape = require('shell-escape');
-var config = require('config').config;
+const jake = require('jake');
+const exec = require('child_process').exec;
+const shellescape = require('shell-escape');
+const config = require('config').config;
 
 jake.task('start', function() {
-  var command = [
+  const command = [
     'pm2', 'start', 'app.js',
     '--name=' + shellescape([config.application.name]),
   ].join(' ');
@@ -14,7 +14,7 @@ jake.task('start', function() {
 });
 
 jake.task('stop', function() {
-  var command = [
+  const command = [
     'pm2', 'stop',
     shellescape([config.application.name]),
   ].join(' ');
@@ -23,7 +23,7 @@ jake.task('stop', function() {
 });
 
 jake.task('restart', function() {
-  var command = [
+  const command = [
     'pm2', 'restart',
     shellescape([config.application.name]),
   ].join(' ');
