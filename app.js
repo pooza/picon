@@ -1,3 +1,4 @@
+'use strict';
 const ROOT_DIR = __dirname;
 var config = require('config').config;
 var log = require('bslogger');
@@ -11,14 +12,14 @@ var app = require('express')();
 log.name = config.application.name;
 var server = app.listen(config.server.port)
 var message = {request:{}, response:{}};
-var package = JSON.parse(
+config.package = JSON.parse(
   fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')
 );
 log.info({
   'message': 'starting...',
   'package': {
-    'name': package.name,
-    'version': package.version,
+    'name': config.package.name,
+    'version': config.package.version,
   },
   'server': {
     'port': config.server.port,

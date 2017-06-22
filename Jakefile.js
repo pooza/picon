@@ -1,3 +1,4 @@
+'use strict';
 var jake = require('jake');
 var exec = require('child_process').exec;
 var shellescape = require('shell-escape');
