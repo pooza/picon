@@ -92,6 +92,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
     sha1.update([
       '/resize_width',
       params.width,
+      params.method,
       blob,
     ].join(' '));
     return path.join(ROOT_DIR, 'www', sha1.digest('hex') + '.png');
@@ -108,6 +109,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
 
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
+  params.method = (params.method || 'resize');
   message.request.params = params;
   message.request.path = request.path;
   const dest = getDestPath(params, fs.readFileSync(request.file.path));
@@ -118,7 +120,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
     response.header('Content-Type', 'image/png');
     response.end(fs.readFileSync(dest));
   } else {
-    const image = gm(request.file.path).resize(params.width, null);
+    const image = gm(request.file.path)[params.method](params.width, null);
     image.write(dest, function () {
       log.info({'created': dest});
       message.response.sent = dest;

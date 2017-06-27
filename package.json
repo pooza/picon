@@ -1,6 +1,6 @@
 {
   "name": "picon-express",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "dependencies": {
     "body-parser": "^1.17.2",
     "config": "^1.26.1",
