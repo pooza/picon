@@ -1,5 +1,6 @@
 'use strict';
 const ROOT_DIR = __dirname;
+const bodyparser = require('body-parser');
 const config = require('config').config;
 const log = require('bslogger');
 const fs = require('fs');
@@ -7,7 +8,15 @@ const crypto = require('crypto');
 const path = require('path');
 const sprintf = require('sprintf-js');
 const gm = require('gm').subClass({imageMagick: true});;
-const app = require('express')();
+const express = require('express');
+const upload = require('multer')({dest: path.join(ROOT_DIR, 'uploads')});
+
+const app = express();
+app.use(bodyparser.urlencoded({
+  limit:'20mb', extended: true
+}));
+app.use(bodyparser.json());
+app.use(express.static('www'));
 
 log.name = config.application.name;
 const server = app.listen(config.server.port)
@@ -26,16 +35,17 @@ log.info({
   },
 });
 
-app.get('/convert', function (request, response, next) {
-  function getDestPath (params) {
+app.post('/resize', upload.single('file'), function (request, response, next) {
+  function getDestPath (params, blob) {
     const sha1 = crypto.createHash('sha1');
     sha1.update([
+      '/resize',
       params.width,
       params.height,
       params.background_color,
-      fs.readFileSync(params.path),
+      blob,
     ].join(' '));
-    return path.join(ROOT_DIR, 'images', sha1.digest('hex') + '.png');
+    return path.join(ROOT_DIR, 'www', sha1.digest('hex') + '.png');
   }
 
   function isExist (path) {
@@ -47,48 +57,74 @@ app.get('/convert', function (request, response, next) {
     }
   }
 
-  function output (path) {
-    fs.readFile(path, function (error, contents) {
-      if (error) {
-        message.error = error.message;
-        log.error(message);
-        response.status(404);
-        response.json(message);
-      }
-      delete message.error;
-      message.response.sent = path;
-      log.info(message);
-      response.header('Content-Type', 'image/png');
-      response.end(contents);
-    })
-  }
-
-  const params = Object.assign({}, request.query);
+  const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request.params = params;
   message.request.path = request.path;
+  const dest = getDestPath(params, fs.readFileSync(request.file.path));
 
-  if (!params.path) {
-    message.error = 'pathが未設定です。';
-    log.info(message);
-    response.status(404);
-    response.json(message);
-    return;
-  }
-  const dest = getDestPath(params);
   if (isExist(dest)) {
-    output(dest);
+    message.response.sent = dest;
+    log.info(message);
+    response.header('Content-Type', 'image/png');
+    response.end(fs.readFileSync(dest));
   } else {
-    const image = gm(params.path)
+    const image = gm(request.file.path)
       .resize(params.width, params.height)
       .gravity('Center')
       .background(params.background_color)
       .extent(params.width, params.height);
     image.write(dest, function () {
       log.info({'created': dest});
-      output(dest);
+      message.response.sent = dest;
+      log.info(message);
+      response.header('Content-Type', 'image/png');
+      response.end(fs.readFileSync(dest));
+    });
+  }
+});
+
+app.post('/resize_width', upload.single('file'), function (request, response, next) {
+  function getDestPath (params, blob) {
+    const sha1 = crypto.createHash('sha1');
+    sha1.update([
+      '/resize_width',
+      params.width,
+      blob,
+    ].join(' '));
+    return path.join(ROOT_DIR, 'www', sha1.digest('hex') + '.png');
+  }
+
+  function isExist (path) {
+    try {
+      fs.statSync(path);
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const params = Object.assign({}, request.body);
+  params.width = (params.width || 100);
+  message.request.params = params;
+  message.request.path = request.path;
+  const dest = getDestPath(params, fs.readFileSync(request.file.path));
+
+  if (isExist(dest)) {
+    message.response.sent = dest;
+    log.info(message);
+    response.header('Content-Type', 'image/png');
+    response.end(fs.readFileSync(dest));
+  } else {
+    const image = gm(request.file.path).resize(params.width, null);
+    image.write(dest, function () {
+      log.info({'created': dest});
+      message.response.sent = dest;
+      log.info(message);
+      response.header('Content-Type', 'image/png');
+      response.end(fs.readFileSync(dest));
     });
   }
 });
