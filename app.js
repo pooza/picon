@@ -1,23 +1,16 @@
 'use strict';
 const ROOT_DIR = __dirname;
-const bodyparser = require('body-parser');
 const config = require('config').config;
 const log = require('bslogger');
 const fs = require('fs');
-const crypto = require('crypto');
+const fileUtils = require('file_utils');
 const path = require('path');
-const sprintf = require('sprintf-js');
 const gm = require('gm').subClass({imageMagick: true});;
 const express = require('express');
 const upload = require('multer')({dest: path.join(ROOT_DIR, 'uploads')});
 
 const app = express();
-app.use(bodyparser.urlencoded({
-  limit:'20mb', extended: true
-}));
-app.use(bodyparser.json());
 app.use(express.static('www'));
-
 log.name = config.application.name;
 const server = app.listen(config.server.port)
 const message = {request:{}, response:{}};
@@ -36,36 +29,25 @@ log.info({
 });
 
 app.post('/resize', upload.single('file'), function (request, response, next) {
-  function getDestPath (params, blob) {
-    const sha1 = crypto.createHash('sha1');
-    sha1.update([
-      '/resize',
-      params.width,
-      params.height,
-      params.background_color,
-      blob,
-    ].join(' '));
-    return path.join(ROOT_DIR, 'www', sha1.digest('hex') + '.png');
-  }
-
-  function isExist (path) {
-    try {
-      fs.statSync(path);
-      return true
-    } catch (error) {
-      return false
-    }
-  }
-
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request.params = params;
   message.request.path = request.path;
-  const dest = getDestPath(params, fs.readFileSync(request.file.path));
+  const dest = path.join(
+    ROOT_DIR,
+    'www',
+    fileUtils.createFileName([
+      '/resize',
+      params.width,
+      params.height,
+      params.background_color,
+      fs.readFileSync(request.file.path),
+    ], '.png'),
+  );
 
-  if (isExist(dest)) {
+  if (fileUtils.isExist(dest)) {
     message.response.sent = dest;
     log.info(message);
     response.header('Content-Type', 'image/png');
@@ -87,34 +69,23 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
 });
 
 app.post('/resize_width', upload.single('file'), function (request, response, next) {
-  function getDestPath (params, blob) {
-    const sha1 = crypto.createHash('sha1');
-    sha1.update([
-      '/resize_width',
-      params.width,
-      params.method,
-      blob,
-    ].join(' '));
-    return path.join(ROOT_DIR, 'www', sha1.digest('hex') + '.png');
-  }
-
-  function isExist (path) {
-    try {
-      fs.statSync(path);
-      return true
-    } catch (error) {
-      return false
-    }
-  }
-
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request.params = params;
   message.request.path = request.path;
-  const dest = getDestPath(params, fs.readFileSync(request.file.path));
+  const dest = path.join(
+    ROOT_DIR,
+    'www',
+    fileUtils.createFileName([
+      '/resize_width',
+      params.width,
+      params.method,
+      fs.readFileSync(request.file.path),
+    ], '.png'),
+  );
 
-  if (isExist(dest)) {
+  if (fileUtils.isExist(dest)) {
     message.response.sent = dest;
     log.info(message);
     response.header('Content-Type', 'image/png');
