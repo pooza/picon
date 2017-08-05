@@ -59,7 +59,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       .background(params.background_color)
       .extent(params.width, params.height);
     image.write(dest, function () {
-      log.info({script:'picon', created: dest});
+      log.info({script:'picon', created:dest});
       message.response.sent = dest;
       log.info(message);
       response.header('Content-Type', 'image/png');
@@ -93,7 +93,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
   } else {
     const image = gm(request.file.path)[params.method](params.width, null);
     image.write(dest, function () {
-      log.info({script:'picon', created: dest});
+      log.info({script:'picon', created:dest});
       message.response.sent = dest;
       log.info(message);
       response.header('Content-Type', 'image/png');
