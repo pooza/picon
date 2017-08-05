@@ -6,7 +6,7 @@ const config = require('config').config;
 
 jake.task('start', function() {
   const command = [
-    'pm2', 'start', 'app.js',
+    'pm2', 'start', 'picon.js',
     '--name=' + shellescape([config.application.name]),
   ].join(' ');
   exec(command);
