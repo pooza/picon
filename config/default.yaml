@@ -6,3 +6,5 @@ config:
     email: tkoishi@b-shock.co.jp
   server:
     port: 3000
+  purge:
+    days: 1

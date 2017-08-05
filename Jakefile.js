@@ -30,3 +30,9 @@ jake.task('restart', function() {
   exec(command);
   console.log(command);
 });
+
+jake.task('purge', function() {
+  const command = ['node', 'purge.js'].join(' ');
+  exec(command);
+  console.log(command);
+});

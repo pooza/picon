@@ -1,5 +1,4 @@
 'use strict';
-const ROOT_DIR = __dirname;
 const config = require('config').config;
 const log = require('bslogger');
 const fs = require('fs');
@@ -7,7 +6,7 @@ const fileUtils = require('file_utils');
 const path = require('path');
 const gm = require('gm').subClass({imageMagick: true});;
 const express = require('express');
-const upload = require('multer')({dest: path.join(ROOT_DIR, 'uploads')});
+const upload = require('multer')({dest: path.join(__dirname, 'uploads')});
 
 const app = express();
 app.use(express.static('www'));
@@ -15,7 +14,7 @@ log.name = config.application.name;
 const server = app.listen(config.server.port)
 const message = {request:{}, response:{}};
 config.package = JSON.parse(
-  fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')
+  fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
 log.info({
   'message': 'starting...',
@@ -36,7 +35,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
   message.request.params = params;
   message.request.path = request.path;
   const dest = path.join(
-    ROOT_DIR,
+    __dirname,
     'www',
     fileUtils.createFileName([
       '/resize',
@@ -75,7 +74,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
   message.request.params = params;
   message.request.path = request.path;
   const dest = path.join(
-    ROOT_DIR,
+    __dirname,
     'www',
     fileUtils.createFileName([
       '/resize_width',
