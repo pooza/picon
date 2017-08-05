@@ -33,8 +33,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
   params.width = (params.width || 100);
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
-  message.request.params = params;
-  message.request.path = request.path;
+  message.request = {params:params, path:request.path};
   const dest = path.join(
     __dirname,
     'www',
@@ -46,9 +45,10 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       fs.readFileSync(request.file.path),
     ], '.png'),
   );
+  message.response = {sent:dest};
+  delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    message.response.sent = dest;
     log.info(message);
     response.header('Content-Type', 'image/png');
     response.end(fs.readFileSync(dest));
@@ -60,7 +60,6 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       .extent(params.width, params.height);
     image.write(dest, function () {
       log.info({script:'picon', created:dest});
-      message.response.sent = dest;
       log.info(message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
@@ -72,8 +71,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
-  message.request.params = params;
-  message.request.path = request.path;
+  message.request = {params:params, path:request.path};
   const dest = path.join(
     __dirname,
     'www',
@@ -84,9 +82,10 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
       fs.readFileSync(request.file.path),
     ], '.png'),
   );
+  message.response = {sent:dest};
+  delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    message.response.sent = dest;
     log.info(message);
     response.header('Content-Type', 'image/png');
     response.end(fs.readFileSync(dest));
@@ -94,7 +93,6 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
     const image = gm(request.file.path)[params.method](params.width, null);
     image.write(dest, function () {
       log.info({script:'picon', created:dest});
-      message.response.sent = dest;
       log.info(message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
@@ -103,8 +101,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
 });
 
 app.use(function (request, response, next) {
-  message.request.path = request.path;
-  message.request.params = request.query;
+  message.request = {params:request.query, path:request.path};
   message.error = 'Not Found';
   log.error(message);
   response.status(404);
@@ -112,8 +109,7 @@ app.use(function (request, response, next) {
 });
 
 app.use(function (error, request, response, next) {
-  message.request.path = request.path;
-  message.request.params = request.query;
+  message.request = {params:request.query, path:request.path};
   message.error = error;
   log.error(message);
   response.status(500);
