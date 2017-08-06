@@ -4,14 +4,14 @@ const log = require('bslogger');
 const fs = require('fs');
 const fileUtils = require('file_utils');
 const path = require('path');
-const gm = require('gm').subClass({imageMagick: true});;
+const gm = require('gm').subClass({imageMagick:true});
 const express = require('express');
-const upload = require('multer')({dest: path.join(__dirname, 'uploads')});
+const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
 
 const app = express();
 app.use(express.static('www'));
 log.name = config.application.name;
-const server = app.listen(config.server.port)
+const server = app.listen(config.server.port);
 const message = {script:'picon', request:{}, response:{}};
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
@@ -19,13 +19,8 @@ config.package = JSON.parse(
 log.info({
   script: 'picon',
   message: 'starting...',
-  package: {
-    name: config.package.name,
-    version: config.package.version,
-  },
-  server: {
-    port: config.server.port,
-  },
+  package: {name:config.package.name, version:config.package.version},
+  server: {port:config.server.port},
 });
 
 app.post('/resize', upload.single('file'), function (request, response, next) {

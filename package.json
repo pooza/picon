@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
     "bslogger": "github:pooza/bslogger.js#master",
     "config": "^1.26.1",
