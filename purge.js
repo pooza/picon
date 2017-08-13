@@ -21,5 +21,5 @@ fs.readdir(path.join(__dirname, 'uploads'), function (error, files) {
         log.info({script:'purge', path:filePath, message:'deleted'});
       }
     });
-  })
-})
+  });
+});

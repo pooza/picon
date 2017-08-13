@@ -23,6 +23,14 @@ log.info({
   server: {port:config.server.port},
 });
 
+app.get('/about', function (request, response, next) {
+  message.request = {path:request.path};
+  log.info(message);
+  const values = Object.assign({}, config.package);
+  delete values.dependencies;
+  response.json(values);
+});
+
 app.post('/resize', upload.single('file'), function (request, response, next) {
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
@@ -60,14 +68,6 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       response.end(fs.readFileSync(dest));
     });
   }
-});
-
-app.get('/about', function (request, response, next) {
-  message.request = {path:request.path};
-  log.info(message);
-  const values = Object.assign({}, config.package);
-  delete values.dependencies;
-  response.json(values);
 });
 
 app.post('/resize_width', upload.single('file'), function (request, response, next) {
