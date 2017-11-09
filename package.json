@@ -3,7 +3,7 @@
   "version": "1.0.2",
   "dependencies": {
     "bslogger": "github:pooza/bslogger.js#master",
-    "config": "^1.27.0",
+    "config": "^1.28.1",
     "express": "^4.16.2",
     "file_utils": "github:pooza/file_utils.js#master",
     "gm": "^1.23.0",
