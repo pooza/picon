@@ -1,9 +1,10 @@
 {
   "name": "picon",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "dependencies": {
     "bslogger": "github:pooza/bslogger.js#master",
     "config": "^1.28.1",
+    "debug": "^3.1.0",
     "express": "^4.16.2",
     "file_utils": "github:pooza/file_utils.js#master",
     "gm": "^1.23.0",
