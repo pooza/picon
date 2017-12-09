@@ -25,6 +25,7 @@ log.info({
 
 app.get('/about', function (request, response, next) {
   message.request = {path:request.path};
+  message.response = {};
   log.info(message);
   const values = Object.assign({}, config.package);
   delete values.dependencies;
