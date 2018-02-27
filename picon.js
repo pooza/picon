@@ -1,6 +1,5 @@
 'use strict';
 const config = require('config').config;
-const log = require('bslogger');
 const fs = require('fs');
 const fileUtils = require('file_utils');
 const path = require('path');
@@ -10,13 +9,12 @@ const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
 
 const app = express();
 app.use(express.static('www'));
-log.name = config.application.name;
 const server = app.listen(config.server.port);
 const message = {script:'picon', request:{}, response:{}};
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
-log.info({
+console.info('%j', {
   script: 'picon',
   message: 'starting...',
   package: {name:config.package.name, version:config.package.version},
@@ -27,7 +25,7 @@ app.get('/about', function (request, response, next) {
   message.request = {path:request.path};
   message.response = {};
   delete message.error;
-  log.info(message);
+  console.info('%j', message);
   const values = Object.assign({}, config.package);
   delete values.dependencies;
   response.json(values);
@@ -54,7 +52,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
   delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    log.info(message);
+    console.info('%j', message);
     response.header('Content-Type', 'image/png');
     response.end(fs.readFileSync(dest));
   } else {
@@ -64,8 +62,8 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       .background(params.background_color)
       .extent(params.width, params.height);
     image.write(dest, function () {
-      log.info({script:'picon', created:dest});
-      log.info(message);
+      console.info('%j', {script:'picon', created:dest});
+      console.info('%j', message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
     });
@@ -91,14 +89,14 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
   delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    log.info(message);
+    console.info('%j', message);
     response.header('Content-Type', 'image/png');
     response.end(fs.readFileSync(dest));
   } else {
     const image = gm(request.file.path)[params.method](params.width, null);
     image.write(dest, function () {
-      log.info({script:'picon', created:dest});
-      log.info(message);
+      console.info('%j', {script:'picon', created:dest});
+      console.info('%j', message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
     });
@@ -108,7 +106,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
 app.use(function (request, response, next) {
   message.request = {params:request.query, path:request.path};
   message.error = 'Not Found';
-  log.error(message);
+  console.error('%j', message);
   response.status(404);
   response.json(message);
 });
@@ -116,7 +114,7 @@ app.use(function (request, response, next) {
 app.use(function (error, request, response, next) {
   message.request = {params:request.query, path:request.path};
   message.error = error;
-  log.error(message);
+  console.error('%j', message);
   response.status(500);
   response.json(message);
 });

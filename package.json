@@ -1,9 +1,8 @@
 {
   "name": "picon",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "dependencies": {
-    "bslogger": "github:pooza/bslogger.js#master",
-    "config": "^1.29.4",
+    "config": "^1.30.0",
     "debug": "^3.1.0",
     "express": "^4.16.2",
     "file_utils": "github:pooza/file_utils.js#master",
@@ -13,6 +12,7 @@
     "js-yaml": "^3.10.0",
     "multer": "^1.3.0",
     "path": "^0.12.7",
-    "qs": "^6.5.1"
+    "qs": "^6.5.1",
+    "shell-escape": "^0.2.0"
   }
 }
