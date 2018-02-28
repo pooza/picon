@@ -21,7 +21,7 @@ console.info('%j', {
   server: {port:config.server.port},
 });
 
-app.get('/about', function (request, response, next) {
+app.get('/about', (request, response, next) => {
   message.request = {path:request.path};
   message.response = {};
   delete message.error;
@@ -31,7 +31,7 @@ app.get('/about', function (request, response, next) {
   response.json(values);
 });
 
-app.post('/resize', upload.single('file'), function (request, response, next) {
+app.post('/resize', upload.single('file'), (request, response, next) => {
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.height = (params.height || 100);
@@ -61,7 +61,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
       .gravity('Center')
       .background(params.background_color)
       .extent(params.width, params.height);
-    image.write(dest, function () {
+    image.write(dest, () => {
       console.info('%j', {script:'picon', created:dest});
       console.info('%j', message);
       response.header('Content-Type', 'image/png');
@@ -70,7 +70,7 @@ app.post('/resize', upload.single('file'), function (request, response, next) {
   }
 });
 
-app.post('/resize_width', upload.single('file'), function (request, response, next) {
+app.post('/resize_width', upload.single('file'), (request, response, next) => {
   const params = Object.assign({}, request.body);
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
@@ -94,7 +94,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
     response.end(fs.readFileSync(dest));
   } else {
     const image = gm(request.file.path)[params.method](params.width, null);
-    image.write(dest, function () {
+    image.write(dest, () => {
       console.info('%j', {script:'picon', created:dest});
       console.info('%j', message);
       response.header('Content-Type', 'image/png');
@@ -103,7 +103,7 @@ app.post('/resize_width', upload.single('file'), function (request, response, ne
   }
 });
 
-app.use(function (request, response, next) {
+app.use((request, response, next) => {
   message.request = {params:request.query, path:request.path};
   message.error = 'Not Found';
   console.error('%j', message);
@@ -111,7 +111,7 @@ app.use(function (request, response, next) {
   response.json(message);
 });
 
-app.use(function (error, request, response, next) {
+app.use((error, request, response, next) => {
   message.request = {params:request.query, path:request.path};
   message.error = error;
   console.error('%j', message);

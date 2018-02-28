@@ -4,7 +4,7 @@ const exec = require('child_process').exec;
 const shellescape = require('shell-escape');
 const config = require('config').config;
 
-jake.task('start', function() {
+jake.task('start', () => {
   const command = [
     'pm2', 'start', 'picon.js',
     '--name=' + shellescape([config.application.name]),
@@ -13,7 +13,7 @@ jake.task('start', function() {
   console.log(command);
 });
 
-jake.task('stop', function() {
+jake.task('stop', () => {
   const command = [
     'pm2', 'stop',
     shellescape([config.application.name]),
@@ -22,7 +22,7 @@ jake.task('stop', function() {
   console.log(command);
 });
 
-jake.task('restart', function() {
+jake.task('restart', () => {
   const command = [
     'pm2', 'restart',
     shellescape([config.application.name]),
@@ -31,7 +31,7 @@ jake.task('restart', function() {
   console.log(command);
 });
 
-jake.task('purge', function() {
+jake.task('purge', () => {
   const command = ['node', 'purge.js'].join(' ');
   exec(command);
   console.log(command);
