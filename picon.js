@@ -26,7 +26,11 @@ app.get('/about', (request, response, next) => {
   message.response = {};
   delete message.error;
   console.info('%j', message);
-  const values = Object.assign({}, config.package);
+  const values = {
+    package: config.package,
+    config: config.server,
+    purge: config.purge,
+  };
   delete values.dependencies;
   response.json(values);
 });
@@ -105,6 +109,7 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
 
 app.use((request, response, next) => {
   message.request = {params:request.query, path:request.path};
+  message.response = {};
   message.error = 'Not Found';
   console.error('%j', message);
   response.status(404);
@@ -113,6 +118,7 @@ app.use((request, response, next) => {
 
 app.use((error, request, response, next) => {
   message.request = {params:request.query, path:request.path};
+  message.response = {};
   message.error = error;
   console.error('%j', message);
   response.status(500);

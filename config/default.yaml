@@ -1,9 +1,4 @@
 config:
-  application:
-    name: picon
-  author:
-    name: pooza
-    email: tkoishi@b-shock.co.jp
   server:
     port: 3000
   purge:
