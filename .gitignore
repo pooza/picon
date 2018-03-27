@@ -1,6 +1,5 @@
 .DS_Store
 Thumbs.db
 ._*
-package-lock.json
 /node_modules
 /config/local.yaml
