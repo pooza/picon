@@ -10,15 +10,15 @@ const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
 const app = express();
 app.use(express.static('www'));
 const server = app.listen(config.server.port);
-const message = {script:'picon', request:{}, response:{}};
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
+const message = {script:path.basename(__filename), request:{}, response:{}};
 console.info('%j', {
-  script: 'picon',
-  message: 'starting...',
-  package: {name:config.package.name, version:config.package.version},
-  server: {port:config.server.port},
+  script:path.basename(__filename),
+  message:'starting...',
+  package:{name:config.package.name, version:config.package.version},
+  server:{port:config.server.port},
 });
 
 app.get('/about', (request, response, next) => {
@@ -26,13 +26,11 @@ app.get('/about', (request, response, next) => {
   message.response = {};
   delete message.error;
   console.info('%j', message);
-  const values = {
+  response.json({
     package: config.package,
     config: config.server,
     purge: config.purge,
-  };
-  delete values.dependencies;
-  response.json(values);
+  });
 });
 
 app.post('/resize', upload.single('file'), (request, response, next) => {
@@ -66,7 +64,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
       .background(params.background_color)
       .extent(params.width, params.height);
     image.write(dest, () => {
-      console.info('%j', {script:'picon', created:dest});
+      console.info('%j', {script:path.basename(__filename), created:dest});
       console.info('%j', message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
@@ -99,7 +97,7 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
   } else {
     const image = gm(request.file.path)[params.method](params.width, null);
     image.write(dest, () => {
-      console.info('%j', {script:'picon', created:dest});
+      console.info('%j', {script:path.basename(__filename), created:dest});
       console.info('%j', message);
       response.header('Content-Type', 'image/png');
       response.end(fs.readFileSync(dest));
