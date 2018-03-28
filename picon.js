@@ -1,4 +1,8 @@
 'use strict';
+process.on('unhandledRejection', (error, p) => {
+  console.error(error);
+});
+
 const config = require('config').config;
 const fs = require('fs');
 const fileUtils = require('file_utils');
@@ -9,7 +13,7 @@ const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
 
 const app = express();
 app.use(express.static('www'));
-const server = app.listen(config.server.port);
+app.listen(config.server.port);
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
@@ -27,9 +31,9 @@ app.get('/about', (request, response, next) => {
   delete message.error;
   console.info('%j', message);
   response.json({
-    package: config.package,
-    config: config.server,
-    purge: config.purge,
+    package:config.package,
+    config:config.server,
+    purge:config.purge,
   });
 });
 
