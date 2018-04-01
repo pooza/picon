@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "dependencies": {
     "config": "^1.30.0",
     "debug": "^3.1.0",
@@ -17,9 +17,7 @@
   },
   "description": "画像のリサイズを行うAPI。",
   "main": "picon.js",
-  "devDependencies": {
-    
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
