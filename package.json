@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "dependencies": {
     "config": "^1.30.0",
     "debug": "^3.1.0",
