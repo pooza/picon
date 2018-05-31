@@ -25,6 +25,37 @@ console.info('%j', {
   server:{port:config.server.port},
 });
 
+const createFileName = (filepath, values) => {
+  values.push(fs.readFileSync(filepath));
+  return fileUtils.createFileName(values, '.png');
+};
+
+const sendResponseImage = (response, filepath) => {
+  const filepathAlt = path.join(
+    path.dirname(filepath),
+    path.basename(filepath, '.png') + '-0.png'
+  );
+  if (fileUtils.isExist(filepath)) {
+    console.info('%j', {script:path.basename(__filename), created:filepath});
+    fs.readFile(filepath, (error, contents) => {
+      console.info('%j', message);
+      response.header('Content-Type', 'image/png');
+      response.end(contents);
+    })
+  } else if (fileUtils.isExist(filepathAlt)) {
+    fs.copyFile(filepathAlt, filepath, () => {
+      console.info('%j', {script:path.basename(__filename), created:filepath});
+      fs.readFile(filepath, (error, contents) => {
+        console.info('%j', message);
+        response.header('Content-Type', 'image/png');
+        response.end(contents);
+      })
+    })
+  } else {
+    throw new Error(filepath + ' not found.');
+  }
+};
+
 app.get('/about', (request, response, next) => {
   message.request = {path:request.path};
   message.response = {};
@@ -43,24 +74,17 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request = {params:params, path:request.path};
-  const dest = path.join(
-    __dirname,
-    'www',
-    fileUtils.createFileName([
-      '/resize',
-      params.width,
-      params.height,
-      params.background_color,
-      fs.readFileSync(request.file.path),
-    ], '.png'),
-  );
+  const dest = path.join(__dirname, 'www', createFileName(request.file.path, [
+    '/resize',
+    params.width,
+    params.height,
+    params.background_color,
+  ]));
   message.response = {sent:dest};
   delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    console.info('%j', message);
-    response.header('Content-Type', 'image/png');
-    response.end(fs.readFileSync(dest));
+    sendResponseImage(response, dest);
   } else {
     const image = gm(request.file.path)
       .resize(params.width, params.height)
@@ -68,10 +92,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
       .background(params.background_color)
       .extent(params.width, params.height);
     image.write(dest, () => {
-      console.info('%j', {script:path.basename(__filename), created:dest});
-      console.info('%j', message);
-      response.header('Content-Type', 'image/png');
-      response.end(fs.readFileSync(dest));
+      sendResponseImage(response, dest);
     });
   }
 });
@@ -81,30 +102,19 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request = {params:params, path:request.path};
-  const dest = path.join(
-    __dirname,
-    'www',
-    fileUtils.createFileName([
-      '/resize_width',
-      params.width,
-      params.method,
-      fs.readFileSync(request.file.path),
-    ], '.png'),
-  );
+  const dest = path.join(__dirname, 'www', createFileName(request.file.path, [
+    '/resize_width',
+    params.width,
+    params.method,
+  ]));
   message.response = {sent:dest};
   delete message.error;
 
   if (fileUtils.isExist(dest)) {
-    console.info('%j', message);
-    response.header('Content-Type', 'image/png');
-    response.end(fs.readFileSync(dest));
+    sendResponseImage(response, dest);
   } else {
-    const image = gm(request.file.path)[params.method](params.width, null);
-    image.write(dest, () => {
-      console.info('%j', {script:path.basename(__filename), created:dest});
-      console.info('%j', message);
-      response.header('Content-Type', 'image/png');
-      response.end(fs.readFileSync(dest));
+    gm(request.file.path)[params.method](params.width, null).write(dest, () => {
+      sendResponseImage(response, dest);
     });
   }
 });
