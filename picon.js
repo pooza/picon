@@ -1,12 +1,18 @@
 'use strict';
-process.on('unhandledRejection', (error, p) => {
+process.on('unhandledRejection', (reason, p) => {
+  console.error('Unhandled Rejection at:', p, 'reason:', reason);
+});
+process.on('uncaughtException', error => {
   console.error(error);
 });
 
 const config = require('config').config;
 const fs = require('fs');
-const fileUtils = require('file_utils');
+const crypto = require('crypto');
 const path = require('path');
+const exec = require('child_process').execSync;
+const shellescape = require('shell-escape');
+const filetype = require('file-type');
 const gm = require('gm').subClass({imageMagick:true});
 const express = require('express');
 const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
@@ -25,6 +31,86 @@ console.info('%j', {
   server:{port:config.server.port},
 });
 
+const createFileName = (filepath, params) => {
+  const values = [];
+  Object.keys(params).forEach(function (k) {
+    values.push(k);
+    values.push(params[k]);
+  });
+  const sha1 = crypto.createHash('sha1');
+  values.push(fs.readFileSync(filepath));
+  sha1.update(values.join('::'));
+  return sha1.digest('hex') + '.png';
+};
+
+const sendResponseImage = (response, filepath) => {
+  const send = (contents) => {
+    console.info('%j', message);
+    response.header('Content-Type', 'image/png');
+    response.end(contents);
+  };
+  const filepathAlt = path.join(
+    path.dirname(filepath),
+    path.basename(filepath, '.png') + '-0.png'
+  );
+  if (isExist(filepath)) {
+    fs.readFile(filepath, (error, contents) => {send(contents)})
+  } else if (isExist(filepathAlt)) {
+    fs.copyFile(filepathAlt, filepath, () => {
+      console.info('%j', {script:path.basename(__filename), copied:filepath});
+      fs.readFile(filepath, (error, contents) => {send(contents)})
+    })
+  } else {
+    throw new Error(filepath + ' not found.');
+  }
+};
+
+const getSourcePath = (filepath) => {
+  let source = filepath;
+  if (isOfficeDocument(source)) {
+    source = convertOfficeDocument(source);
+  }
+  return source;
+};
+
+const isOfficeDocument = filepath => {
+  return [
+    'msi',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+  ].indexOf(filetype(fs.readFileSync(filepath)).ext) != -1;
+};
+
+const convertOfficeDocument = filepath => {
+  exec([
+    'libreoffice',
+    '--headless',
+    '--nologo',
+    '--nofirststartwizard',
+    '--convert-to', 'png',
+    '--outdir', path.join(__dirname, 'www'),
+    shellescape([filepath]),
+  ].join(' '));
+  return path.join(
+    __dirname,
+    'www',
+    path.basename(filepath, '.png') + '.png',
+  );
+};
+
+const isExist = filepath => {
+  try {
+    fs.statSync(filepath);
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 app.get('/about', (request, response, next) => {
   message.request = {path:request.path};
   message.response = {};
@@ -38,73 +124,49 @@ app.get('/about', (request, response, next) => {
 });
 
 app.post('/resize', upload.single('file'), (request, response, next) => {
+  const source = getSourcePath(request.file.path);
   const params = Object.assign({}, request.body);
+  params.function = 'resize';
   params.width = (params.width || 100);
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request = {params:params, path:request.path};
-  const dest = path.join(
-    __dirname,
-    'www',
-    fileUtils.createFileName([
-      '/resize',
-      params.width,
-      params.height,
-      params.background_color,
-      fs.readFileSync(request.file.path),
-    ], '.png'),
-  );
+  const dest = path.join(__dirname, 'www', createFileName(request.file.path, params));
   message.response = {sent:dest};
   delete message.error;
 
-  if (fileUtils.isExist(dest)) {
-    console.info('%j', message);
-    response.header('Content-Type', 'image/png');
-    response.end(fs.readFileSync(dest));
+  if (isExist(dest)) {
+    sendResponseImage(response, dest);
   } else {
-    const image = gm(request.file.path)
+    const image = gm(source)
       .resize(params.width, params.height)
       .gravity('Center')
       .background(params.background_color)
-      .extent(params.width, params.height);
-    image.write(dest, () => {
-      console.info('%j', {script:path.basename(__filename), created:dest});
-      console.info('%j', message);
-      response.header('Content-Type', 'image/png');
-      response.end(fs.readFileSync(dest));
-    });
+      .extent(params.width, params.height)
+      .write(dest, () => {
+        console.info('%j', {script:path.basename(__filename), created:dest});
+        sendResponseImage(response, dest);
+      });
   }
 });
 
 app.post('/resize_width', upload.single('file'), (request, response, next) => {
+  const source = getSourcePath(request.file.path);
   const params = Object.assign({}, request.body);
+  params.function = 'resize_width';
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request = {params:params, path:request.path};
-  const dest = path.join(
-    __dirname,
-    'www',
-    fileUtils.createFileName([
-      '/resize_width',
-      params.width,
-      params.method,
-      fs.readFileSync(request.file.path),
-    ], '.png'),
-  );
+  const dest = path.join(__dirname, 'www', createFileName(request.file.path, params));
   message.response = {sent:dest};
   delete message.error;
 
-  if (fileUtils.isExist(dest)) {
-    console.info('%j', message);
-    response.header('Content-Type', 'image/png');
-    response.end(fs.readFileSync(dest));
+  if (isExist(dest)) {
+    sendResponseImage(response, dest);
   } else {
-    const image = gm(request.file.path)[params.method](params.width, null);
-    image.write(dest, () => {
+    gm(source)[params.method](params.width, null).write(dest, () => {
       console.info('%j', {script:path.basename(__filename), created:dest});
-      console.info('%j', message);
-      response.header('Content-Type', 'image/png');
-      response.end(fs.readFileSync(dest));
+      sendResponseImage(response, dest);
     });
   }
 });
