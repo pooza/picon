@@ -75,14 +75,14 @@ const getSourcePath = (filepath) => {
 
 const isOfficeDocument = filepath => {
   return [
-    'msi',
-    'doc',
-    'docx',
-    'xls',
-    'xlsx',
-    'ppt',
-    'pptx',
-  ].indexOf(filetype(fs.readFileSync(filepath)).ext) != -1;
+    'application/x-msi',
+    'application/vnd.ms-excel',
+    'application/vnd.ms-word',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ].indexOf(filetype(fs.readFileSync(filepath)).mime) != -1;
 };
 
 const convertOfficeDocument = filepath => {
