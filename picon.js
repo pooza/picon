@@ -65,7 +65,7 @@ const sendResponseImage = (response, filepath) => {
   }
 };
 
-const getSourcePath = (filepath) => {
+const getSourcePath = filepath => {
   let source = filepath;
   if (isOfficeDocument(source)) {
     source = convertOfficeDocument(source);
@@ -74,15 +74,7 @@ const getSourcePath = (filepath) => {
 };
 
 const isOfficeDocument = filepath => {
-  return [
-    'application/x-msi',
-    'application/vnd.ms-excel',
-    'application/vnd.ms-word',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  ].indexOf(filetype(fs.readFileSync(filepath)).mime) != -1;
+  return config.office.types.indexOf(filetype(fs.readFileSync(filepath)).mime) != -1;
 };
 
 const convertOfficeDocument = filepath => {
@@ -92,7 +84,7 @@ const convertOfficeDocument = filepath => {
     '--nologo',
     '--nofirststartwizard',
     '--convert-to', 'png',
-    '--outdir', path.join(__dirname, 'www'),
+    '--outdir', shellescape([path.join(__dirname, 'www')]),
     shellescape([filepath]),
   ].join(' '));
   return path.join(
