@@ -3,3 +3,12 @@ config:
     port: 3000
   purge:
     days: 1
+  office:
+    types:
+      - application/x-msi
+      - application/vnd.ms-excel
+      - application/vnd.ms-word
+      - application/vnd.ms-powerpoint
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation
