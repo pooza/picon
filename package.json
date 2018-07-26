@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "dependencies": {
     "child_process": "^1.0.2",
     "config": "^1.31.0",
@@ -20,9 +20,7 @@
   },
   "description": "Web API for resizing images",
   "main": "picon.js",
-  "devDependencies": {
-    
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
