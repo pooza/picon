@@ -33,7 +33,7 @@ console.info('%j', {
 
 const createFileName = (filepath, params) => {
   const values = [];
-  Object.keys(params).forEach(function (k) {
+  Object.keys(params).forEach(k => {
     values.push(k);
     values.push(params[k]);
   });
