@@ -18,9 +18,11 @@
     "qs": "^6.5.2",
     "shell-escape": "^0.2.0"
   },
-  "description": "画像のリサイズを行うAPI。",
+  "description": "Web API for resizing images",
   "main": "picon.js",
-  "devDependencies": {},
+  "devDependencies": {
+    
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
