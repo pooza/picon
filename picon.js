@@ -130,7 +130,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
   if (isExist(dest)) {
     sendResponseImage(response, dest);
   } else {
-    const image = gm(source)
+    gm(source)
       .resize(params.width, params.height)
       .gravity('Center')
       .background(params.background_color)
