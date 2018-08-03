@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const posix = require('posix');
 
-const dir = path.join(__dirname, 'uploads');
+const dir = path.join(__dirname, 'tmp');
 const yesterday = new Date();
 yesterday.setDate(yesterday.getDate() - config.purge.days);
 
@@ -20,10 +20,10 @@ fs.readdir(dir, (error, files) => {
     log({dir:dir, message:'start'});
   }).then(() => {
     files.filter(file => {
-      const fileStat = fs.statSync(path.join(__dirname, 'uploads', file));
+      const fileStat = fs.statSync(path.join(__dirname, 'tmp', file));
       return fileStat.isFile() && !file.match(/^\./) && (fileStat.mtime < yesterday);
     }).forEach(file => {
-      const filePath = path.join(__dirname, 'uploads', file);
+      const filePath = path.join(__dirname, 'tmp', file);
       fs.unlink(filePath, error => {
         if (error) {
           log({path:filePath, message:error}, 'crit');

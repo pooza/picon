@@ -15,7 +15,7 @@ const shellescape = require('shell-escape');
 const filetype = require('file-type');
 const gm = require('gm').subClass({imageMagick:true});
 const express = require('express');
-const upload = require('multer')({dest:path.join(__dirname, 'uploads')});
+const upload = require('multer')({dest:path.join(__dirname, 'tmp')});
 
 const app = express();
 app.use(express.static('www'));
@@ -84,12 +84,12 @@ const convertOfficeDocument = filepath => {
     '--nologo',
     '--nofirststartwizard',
     '--convert-to', 'png',
-    '--outdir', shellescape([path.join(__dirname, 'www')]),
+    '--outdir', shellescape([path.join(__dirname, 'tmp')]),
     shellescape([filepath]),
   ].join(' '));
   return path.join(
     __dirname,
-    'www',
+    'tmp',
     path.basename(filepath, '.png') + '.png',
   );
 };
