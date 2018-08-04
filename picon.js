@@ -8,6 +8,7 @@ const exec = require('child_process').execSync;
 const shellescape = require('shell-escape');
 const filetype = require('file-type');
 const gm = require('gm').subClass({imageMagick:true});
+const ffmpeg = require('fluent-ffmpeg');
 const express = require('express');
 const upload = require('multer')({dest:path.join(__dirname, 'tmp')});
 
@@ -37,7 +38,7 @@ const createFileName = (request, params) => {
   return sha1.digest('hex') + '.png';
 };
 
-const sendResponseImage = (response, filepath, params) => {
+const sendImage = (response, filepath, params) => {
   if (isExist(filepath)) {
     fs.readFile(filepath, (error, contents) => {
       if (error) {
@@ -55,7 +56,7 @@ const sendResponseImage = (response, filepath, params) => {
 
 const sendErrorImage = response => {
   response.status(400);
-  sendResponseImage(response, path.join(__dirname, 'blank.png'), {});
+  sendImage(response, path.join(__dirname, 'blank.png'), {});
 };
 
 const getType = filepath => {
@@ -87,34 +88,35 @@ const convertPDF = filepath => {
   return new Promise((resolve, reject) => {
     let dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
     gm(filepath).write(dest, error => {
-      if (error) {
-        reject(error);
-      } else {
-        const names = [
-          dest,
-          path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
-        ];
-        dest = path.join(__dirname, 'www', path.basename(dest));
+      const names = [
+        dest,
+        path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
+      ];
+      dest = path.join(__dirname, 'www', path.basename(dest));
 
-        names.forEach(src => {
-          if (isExist(src)) {
-            fs.copyFile(src, dest, error => {
-              if (error) {
-                reject(error.Error);
-              } else {
-                console.info('%j', {script:path.basename(__filename), copied:dest});
-                resolve(dest);
-              }
-            })
-          }
-        })
-        reject(src + 'not found.');
-      }
+      names.forEach(src => {
+        if (isExist(src)) {
+          fs.copyFile(src, dest, error => {
+            console.info('%j', {script:path.basename(__filename), copied:dest});
+            resolve(dest);
+          })
+        }
+      })
     });
   });
 };
 
 const convertVideo = filepath => {
+  return new Promise((resolve, reject) => {
+    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
+    ffmpeg(filepath).screenshots({
+      timemarks: [0],
+      folder:path.dirname(dest),
+      filename:path.basename(dest),
+    }).on('end', () => {
+      resolve(dest);
+    });
+  });
 };
 
 const convertOfficeDocument = filepath => {
@@ -153,17 +155,15 @@ app.post('/convert', upload.single('file'), (request, response, next) => {
 
   if (isPDF(request.file.path)) {
     convertPDF(request.file.path).then(dest => {
-      sendResponseImage(response, dest, params);
-    }).catch(error => {
-      sendErrorImage(response);
+      sendImage(response, dest, params);
     });
   } else if (isVideo(request.file.path)) {
-    sendResponseImage(response, convertVideo(request.file.path), params);
+    convertVideo(request.file.path).then(dest => {
+      sendImage(response, dest, params);
+    });
   } else if (isOfficeDocument(request.file.path)) {
     convertOfficeDocument(request.file.path).then(dest => {
-      sendResponseImage(response, dest, params);
-    }).catch(error => {
-      sendErrorImage(response);
+      sendImage(response, dest, params);
     });
   } else {
     sendErrorImage(response);
@@ -182,7 +182,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
   delete message.error;
 
   if (isExist(dest)) {
-    sendResponseImage(response, dest, params);
+    sendImage(response, dest, params);
   } else {
     gm(request.file.path)
       .resize(params.width, params.height)
@@ -194,7 +194,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
           sendErrorImage(response);
         } else {
           console.info('%j', {script:path.basename(__filename), created:dest});
-          sendResponseImage(response, dest, params);
+          sendImage(response, dest, params);
         }
       });
   }
@@ -211,14 +211,14 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
   delete message.error;
 
   if (isExist(dest)) {
-    sendResponseImage(response, dest, params);
+    sendImage(response, dest, params);
   } else {
     gm(request.file.path)[params.method](params.width, null).write(dest, error => {
       if (error) {
         sendErrorImage(response);
       } else {
         console.info('%j', {script:path.basename(__filename), created:dest});
-        sendResponseImage(response, dest, params);
+        sendImage(response, dest, params);
       }
     });
   }

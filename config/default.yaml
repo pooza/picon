@@ -16,5 +16,3 @@ config:
     types:
       - video/mp4
       - video/x-flv
-      - video/quicktime
-      - video/x-ms-wmv
