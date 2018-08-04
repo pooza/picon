@@ -12,3 +12,9 @@ config:
       - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
       - application/vnd.openxmlformats-officedocument.presentationml.presentation
+  video:
+    types:
+      - video/mp4
+      - video/x-flv
+      - video/quicktime
+      - video/x-ms-wmv

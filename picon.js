@@ -1,10 +1,4 @@
 'use strict';
-process.on('unhandledRejection', (reason, p) => {
-  console.error('Unhandled Rejection at:', p, 'reason:', reason);
-});
-process.on('uncaughtException', error => {
-  console.error(error);
-});
 
 const config = require('config').config;
 const fs = require('fs');
@@ -31,67 +25,41 @@ console.info('%j', {
   server:{port:config.server.port},
 });
 
-const createFileName = (filepath, params) => {
+const createFileName = (request, params) => {
   const values = [];
   Object.keys(params).forEach(k => {
     values.push(k);
     values.push(params[k]);
   });
   const sha1 = crypto.createHash('sha1');
-  values.push(fs.readFileSync(filepath));
+  values.push(fs.readFileSync(request.file.path));
   sha1.update(values.join('::'));
   return sha1.digest('hex') + '.png';
 };
 
-const sendResponseImage = (response, filepath) => {
-  const send = (contents) => {
-    console.info('%j', message);
-    response.header('Content-Type', 'image/png');
-    response.end(contents);
-  };
-  const filepathAlt = path.join(
-    path.dirname(filepath),
-    path.basename(filepath, '.png') + '-0.png'
-  );
+const sendResponseImage = (response, filepath, params) => {
   if (isExist(filepath)) {
-    fs.readFile(filepath, (error, contents) => {send(contents)})
-  } else if (isExist(filepathAlt)) {
-    fs.copyFile(filepathAlt, filepath, () => {
-      console.info('%j', {script:path.basename(__filename), copied:filepath});
-      fs.readFile(filepath, (error, contents) => {send(contents)})
+    fs.readFile(filepath, (error, contents) => {
+      if (error) {
+        throw new Error(error);
+      } else {
+        console.info('%j', message);
+        response.header('Content-Type', 'image/png');
+        response.end(contents);
+      }
     })
   } else {
     throw new Error(filepath + ' not found.');
   }
 };
 
-const getSourcePath = filepath => {
-  let source = filepath;
-  if (isOfficeDocument(source)) {
-    source = convertOfficeDocument(source);
-  }
-  return source;
+const sendErrorImage = response => {
+  response.status(400);
+  sendResponseImage(response, path.join(__dirname, 'blank.png'), {});
 };
 
-const isOfficeDocument = filepath => {
-  return config.office.types.indexOf(filetype(fs.readFileSync(filepath)).mime) != -1;
-};
-
-const convertOfficeDocument = filepath => {
-  exec([
-    'libreoffice',
-    '--headless',
-    '--nologo',
-    '--nofirststartwizard',
-    '--convert-to', 'png',
-    '--outdir', shellescape([path.join(__dirname, 'tmp')]),
-    shellescape([filepath]),
-  ].join(' '));
-  return path.join(
-    __dirname,
-    'tmp',
-    path.basename(filepath, '.png') + '.png',
-  );
+const getType = filepath => {
+  return filetype(fs.readFileSync(filepath)).mime;
 };
 
 const isExist = filepath => {
@@ -101,7 +69,69 @@ const isExist = filepath => {
   } catch (error) {
     return false
   }
-}
+};
+
+const isPDF = filepath => {
+  return getType(filepath) == 'application/pdf';
+};
+
+const isVideo = filepath => {
+  return config.video.types.indexOf(getType(filepath)) != -1;
+};
+
+const isOfficeDocument = filepath => {
+  return config.office.types.indexOf(getType(filepath)) != -1;
+};
+
+const convertPDF = filepath => {
+  return new Promise((resolve, reject) => {
+    let dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
+    gm(filepath).write(dest, error => {
+      if (error) {
+        reject(error);
+      } else {
+        const names = [
+          dest,
+          path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
+        ];
+        dest = path.join(__dirname, 'www', path.basename(dest));
+
+        names.forEach(src => {
+          if (isExist(src)) {
+            fs.copyFile(src, dest, error => {
+              if (error) {
+                reject(error.Error);
+              } else {
+                console.info('%j', {script:path.basename(__filename), copied:dest});
+                resolve(dest);
+              }
+            })
+          }
+        })
+        reject(src + 'not found.');
+      }
+    });
+  });
+};
+
+const convertVideo = filepath => {
+};
+
+const convertOfficeDocument = filepath => {
+  return new Promise((resolve, reject) => {
+    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
+    exec([
+      'libreoffice',
+      '--headless',
+      '--nologo',
+      '--nofirststartwizard',
+      '--convert-to', 'png',
+      '--outdir', shellescape([path.dirname(dest)]),
+      shellescape([filepath]),
+    ].join(' '));
+    resolve(dest);
+  });
+};
 
 app.get('/about', (request, response, next) => {
   message.request = {path:request.path};
@@ -115,50 +145,81 @@ app.get('/about', (request, response, next) => {
   });
 });
 
+app.post('/convert', upload.single('file'), (request, response, next) => {
+  const params = Object.assign({}, request.body);
+  params.function = 'convert';
+  message.request = {path:request.path};
+  delete message.error;
+
+  if (isPDF(request.file.path)) {
+    convertPDF(request.file.path).then(dest => {
+      sendResponseImage(response, dest, params);
+    }).catch(error => {
+      sendErrorImage(response);
+    });
+  } else if (isVideo(request.file.path)) {
+    sendResponseImage(response, convertVideo(request.file.path), params);
+  } else if (isOfficeDocument(request.file.path)) {
+    convertOfficeDocument(request.file.path).then(dest => {
+      sendResponseImage(response, dest, params);
+    }).catch(error => {
+      sendErrorImage(response);
+    });
+  } else {
+    sendErrorImage(response);
+  }
+});
+
 app.post('/resize', upload.single('file'), (request, response, next) => {
-  const source = getSourcePath(request.file.path);
   const params = Object.assign({}, request.body);
   params.function = 'resize';
   params.width = (params.width || 100);
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'www', createFileName(request.file.path, params));
+  const dest = path.join(__dirname, 'www', createFileName(request, params));
   message.response = {sent:dest};
   delete message.error;
 
   if (isExist(dest)) {
-    sendResponseImage(response, dest);
+    sendResponseImage(response, dest, params);
   } else {
-    gm(source)
+    gm(request.file.path)
       .resize(params.width, params.height)
       .gravity('Center')
       .background(params.background_color)
       .extent(params.width, params.height)
-      .write(dest, () => {
-        console.info('%j', {script:path.basename(__filename), created:dest});
-        sendResponseImage(response, dest);
+      .write(dest, error => {
+        if (error) {
+          sendErrorImage(response);
+        } else {
+          console.info('%j', {script:path.basename(__filename), created:dest});
+          sendResponseImage(response, dest, params);
+        }
       });
   }
 });
 
 app.post('/resize_width', upload.single('file'), (request, response, next) => {
-  const source = getSourcePath(request.file.path);
   const params = Object.assign({}, request.body);
   params.function = 'resize_width';
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'www', createFileName(request.file.path, params));
+  const dest = path.join(__dirname, 'www', createFileName(request, params));
   message.response = {sent:dest};
   delete message.error;
 
   if (isExist(dest)) {
-    sendResponseImage(response, dest);
+    sendResponseImage(response, dest, params);
   } else {
-    gm(source)[params.method](params.width, null).write(dest, () => {
-      console.info('%j', {script:path.basename(__filename), created:dest});
-      sendResponseImage(response, dest);
+    gm(request.file.path)[params.method](params.width, null).write(dest, error => {
+      if (error) {
+        sendErrorImage(response);
+      } else {
+        console.info('%j', {script:path.basename(__filename), created:dest});
+        sendResponseImage(response, dest, params);
+      }
     });
   }
 });
