@@ -7,10 +7,33 @@ const path = require('path');
 const exec = require('child_process').execSync;
 const shellescape = require('shell-escape');
 const filetype = require('file-type');
+const {CronJob} = require('cron');
 const gm = require('gm').subClass({imageMagick:true});
 const ffmpeg = require('fluent-ffmpeg');
 const express = require('express');
 const upload = require('multer')({dest:path.join(__dirname, 'tmp')});
+
+new CronJob(config.purge.cron, () => {
+  const dir = path.join(__dirname, 'tmp');
+  fs.readdir(dir, (error, files) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - config.purge.days);
+
+    files.filter(file => {
+      const fileStat = fs.statSync(path.join(__dirname, 'tmp', file));
+      return fileStat.isFile() && !file.match(/^\./) && (fileStat.mtime < yesterday);
+    }).forEach(file => {
+      const filePath = path.join(__dirname, 'tmp', file);
+      fs.unlink(filePath, error => {
+        if (error) {
+          console.error('%j', {path:filePath, message:error});
+        } else {
+          console.info('%j', {path:filePath, message:'deleted'});
+        }
+      });
+    });
+  });
+}, null, true);
 
 const app = express();
 app.use(express.static('www'));
@@ -18,9 +41,8 @@ app.listen(config.server.port);
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
-const message = {script:path.basename(__filename), request:{}, response:{}};
+const message = {request:{}, response:{}};
 console.info('%j', {
-  script:path.basename(__filename),
   message:'starting...',
   package:{name:config.package.name, version:config.package.version},
   server:{port:config.server.port},
@@ -97,7 +119,7 @@ const convertPDF = filepath => {
       names.forEach(src => {
         if (isExist(src)) {
           fs.copyFile(src, dest, error => {
-            console.info('%j', {script:path.basename(__filename), copied:dest});
+            console.info('%j', {copied:dest});
             resolve(dest);
           })
         }
@@ -193,7 +215,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
         if (error) {
           sendErrorImage(response);
         } else {
-          console.info('%j', {script:path.basename(__filename), created:dest});
+          console.info('%j', {created:dest});
           sendImage(response, dest, params);
         }
       });
@@ -217,7 +239,7 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
       if (error) {
         sendErrorImage(response);
       } else {
-        console.info('%j', {script:path.basename(__filename), created:dest});
+        console.info('%j', {created:dest});
         sendImage(response, dest, params);
       }
     });
