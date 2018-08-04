@@ -76,8 +76,8 @@ const sendImage = (response, filepath, params) => {
   }
 };
 
-const sendErrorImage = response => {
-  response.status(400);
+const sendErrorImage = (response, status) => {
+  response.status(status || 400);
   sendImage(response, path.join(__dirname, 'blank.png'), {});
 };
 
@@ -251,8 +251,7 @@ app.use((request, response, next) => {
   message.response = {};
   message.error = 'Not Found';
   console.error('%j', message);
-  response.status(404);
-  response.json(message);
+  sendErrorImage(response, 404);
 });
 
 app.use((error, request, response, next) => {
@@ -260,6 +259,5 @@ app.use((error, request, response, next) => {
   message.response = {};
   message.error = error;
   console.error('%j', message);
-  response.status(500);
-  response.json(message);
+  sendErrorImage(response, 500);
 });
