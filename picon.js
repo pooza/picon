@@ -4,7 +4,7 @@ const config = require('config').config;
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
-const exec = require('child_process').execSync;
+const exec = require('child_process').exec;
 const shellescape = require('shell-escape');
 const filetype = require('file-type');
 const {CronJob} = require('cron');
@@ -144,7 +144,7 @@ const convertVideo = filepath => {
 const convertOfficeDocument = filepath => {
   return new Promise((resolve, reject) => {
     const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
-    exec([
+    const command = [
       'libreoffice',
       '--headless',
       '--nologo',
@@ -152,8 +152,10 @@ const convertOfficeDocument = filepath => {
       '--convert-to', 'png',
       '--outdir', shellescape([path.dirname(dest)]),
       shellescape([filepath]),
-    ].join(' '));
-    resolve(dest);
+    ].join(' ');
+    exec(command, (error, stdout, stderr) => {
+      resolve(dest);
+    });
   });
 };
 
