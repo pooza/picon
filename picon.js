@@ -23,12 +23,12 @@ new CronJob(config.purge.cron, () => {
       const fileStat = fs.statSync(path.join(__dirname, 'tmp', file));
       return fileStat.isFile() && !file.match(/^\./) && (fileStat.mtime < yesterday);
     }).forEach(file => {
-      const f = path.join(__dirname, 'tmp', file);
-      fs.unlink(f, error => {
+      const filePath = path.join(__dirname, 'tmp', file);
+      fs.unlink(filePath, error => {
         if (error) {
-          console.error('%j', {path:f, message:error});
+          console.error('%j', {path:filePath, message:error});
         } else {
-          console.info('%j', {path:f, message:'deleted'});
+          console.info('%j', {path:filePath, message:'deleted'});
         }
       });
     });
@@ -60,9 +60,9 @@ const createFileName = (request, params) => {
   return sha1.digest('hex') + '.png';
 };
 
-const sendImage = (response, f, params) => {
-  if (isExist(f)) {
-    fs.readFile(f, (error, contents) => {
+const sendImage = (response, filepath, params) => {
+  if (isExist(filepath)) {
+    fs.readFile(filepath, (error, contents) => {
       if (error) {
         throw new Error(error);
       } else {
@@ -72,7 +72,7 @@ const sendImage = (response, f, params) => {
       }
     })
   } else {
-    throw new Error(f + ' not found.');
+    throw new Error(filepath + ' not found.');
   }
 };
 
@@ -81,35 +81,35 @@ const sendErrorImage = (response, status) => {
   sendImage(response, path.join(__dirname, 'blank.png'), {});
 };
 
-const getType = f => {
-  return filetype(fs.readFileSync(f)).mime;
+const getType = filepath => {
+  return filetype(fs.readFileSync(filepath)).mime;
 };
 
-const isExist = f => {
+const isExist = filepath => {
   try {
-    fs.statSync(f);
+    fs.statSync(filepath);
     return true
   } catch (error) {
     return false
   }
 };
 
-const isPDF = f => {
-  return getType(f) == 'application/pdf';
+const isPDF = filepath => {
+  return getType(filepath) == 'application/pdf';
 };
 
-const isVideo = f => {
-  return config.video.types.indexOf(getType(f)) != -1;
+const isVideo = filepath => {
+  return config.video.types.indexOf(getType(filepath)) != -1;
 };
 
-const isOfficeDocument = f => {
-  return config.office.types.indexOf(getType(f)) != -1;
+const isOfficeDocument = filepath => {
+  return config.office.types.indexOf(getType(filepath)) != -1;
 };
 
-const convertPDF = f => {
+const convertPDF = filepath => {
   return new Promise((resolve, reject) => {
-    let dest = path.join(__dirname, 'tmp', path.basename(f, '.png') + '.png');
-    gm(f).write(dest, error => {
+    let dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
+    gm(filepath).write(dest, error => {
       const names = [
         dest,
         path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
@@ -128,10 +128,10 @@ const convertPDF = f => {
   });
 };
 
-const convertVideo = f => {
+const convertVideo = filepath => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'www', path.basename(f) + '.png');
-    ffmpeg(f).screenshots({
+    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
+    ffmpeg(filepath).screenshots({
       timemarks: [0],
       folder:path.dirname(dest),
       filename:path.basename(dest),
@@ -141,9 +141,9 @@ const convertVideo = f => {
   });
 };
 
-const convertOfficeDocument = f => {
+const convertOfficeDocument = filepath => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'www', path.basename(f) + '.png');
+    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
     const command = [
       'libreoffice',
       '--headless',
@@ -151,7 +151,7 @@ const convertOfficeDocument = f => {
       '--nofirststartwizard',
       '--convert-to', 'png',
       '--outdir', shellescape([path.dirname(dest)]),
-      shellescape([f]),
+      shellescape([filepath]),
     ].join(' ');
     exec(command, (error, stdout, stderr) => {
       resolve(dest);
