@@ -19,16 +19,15 @@ new CronJob(config.purge.cron, () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - config.purge.days);
 
-    files.filter(file => {
-      const fileStat = fs.statSync(path.join(__dirname, 'tmp', file));
-      return fileStat.isFile() && !file.match(/^\./) && (fileStat.mtime < yesterday);
-    }).forEach(file => {
-      const filePath = path.join(__dirname, 'tmp', file);
-      fs.unlink(filePath, error => {
+    files.filter(f => {
+      const stat = fs.statSync(path.join(__dirname, 'tmp', f));
+      return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday);
+    }).forEach(f => {
+      fs.unlink(path.join(dir, f), error => {
         if (error) {
-          console.error('%j', {path:filePath, message:error});
+          console.error('%j', {path:path.join(dir, f), message:error});
         } else {
-          console.info('%j', {path:filePath, message:'deleted'});
+          console.info('%j', {path:path.join(dir, f), message:'deleted'});
         }
       });
     });
@@ -59,9 +58,9 @@ const createFileName = (request, params) => {
   return sha1.digest('hex') + '.png';
 };
 
-const sendImage = (response, filepath, params) => {
-  if (isExist(filepath)) {
-    fs.readFile(filepath, (error, contents) => {
+const sendImage = (response, f, params) => {
+  if (isExist(f)) {
+    fs.readFile(f, (error, contents) => {
       if (error) {
         throw new Error(error);
       } else {
@@ -71,39 +70,39 @@ const sendImage = (response, filepath, params) => {
       }
     })
   } else {
-    throw new Error(filepath + ' not found.');
+    throw new Error(f + ' not found.');
   }
 };
 
-const getType = filepath => {
-  return filetype(fs.readFileSync(filepath)).mime;
+const getType = f => {
+  return filetype(fs.readFileSync(f)).mime;
 };
 
-const isExist = filepath => {
+const isExist = f => {
   try {
-    fs.statSync(filepath);
+    fs.statSync(f);
     return true
   } catch (error) {
     return false
   }
 };
 
-const isPDF = filepath => {
-  return getType(filepath) == 'application/pdf';
+const isPDF = f => {
+  return getType(f) == 'application/pdf';
 };
 
-const isVideo = filepath => {
-  return config.video.types.indexOf(getType(filepath)) != -1;
+const isVideo = f => {
+  return config.video.types.indexOf(getType(f)) != -1;
 };
 
-const isOfficeDocument = filepath => {
-  return config.office.types.indexOf(getType(filepath)) != -1;
+const isOfficeDocument = f => {
+  return config.office.types.indexOf(getType(f)) != -1;
 };
 
-const convertPDF = filepath => {
+const convertPDF = f => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
-    gm(filepath).write(dest, error => {
+    const dest = path.join(__dirname, 'tmp', path.basename(f, '.png') + '.png');
+    gm(f).write(dest, error => {
       [
         dest,
         path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
@@ -116,10 +115,10 @@ const convertPDF = filepath => {
   });
 };
 
-const convertVideo = filepath => {
+const convertVideo = f => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(filepath) + '.png');
-    ffmpeg(filepath).screenshots({
+    const dest = path.join(__dirname, 'tmp', path.basename(f) + '.png');
+    ffmpeg(f).screenshots({
       timemarks: [0],
       folder:path.dirname(dest),
       filename:path.basename(dest),
@@ -129,9 +128,9 @@ const convertVideo = filepath => {
   });
 };
 
-const convertOfficeDocument = filepath => {
+const convertOfficeDocument = f => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(filepath) + '.png');
+    const dest = path.join(__dirname, 'tmp', path.basename(f) + '.png');
     const command = [
       'libreoffice',
       '--headless',
@@ -139,7 +138,7 @@ const convertOfficeDocument = filepath => {
       '--nofirststartwizard',
       '--convert-to', 'png',
       '--outdir', shellescape([path.dirname(dest)]),
-      shellescape([filepath]),
+      shellescape([f]),
     ].join(' ');
     exec(command, (error, stdout, stderr) => {
       resolve(dest);
