@@ -13,27 +13,6 @@ const ffmpeg = require('fluent-ffmpeg');
 const express = require('express');
 const upload = require('multer')({dest:path.join(__dirname, 'tmp')});
 
-new CronJob(config.purge.cron, () => {
-  const dir = path.join(__dirname, 'tmp');
-  fs.readdir(dir, (error, files) => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - config.purge.days);
-
-    files.filter(f => {
-      const stat = fs.statSync(path.join(__dirname, 'tmp', f));
-      return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday);
-    }).forEach(f => {
-      fs.unlink(path.join(dir, f), error => {
-        if (error) {
-          console.error('%j', {path:path.join(dir, f), message:error});
-        } else {
-          console.info('%j', {path:path.join(dir, f), message:'deleted'});
-        }
-      });
-    });
-  });
-}, null, true);
-
 const app = express();
 app.listen(config.server.port);
 config.package = JSON.parse(
@@ -46,14 +25,14 @@ console.info('%j', {
   server:{port:config.server.port},
 });
 
-const createFileName = (request, params) => {
+const createFileName = (f, params) => {
   const values = [];
   Object.keys(params).forEach(k => {
     values.push(k);
     values.push(params[k]);
   });
   const sha1 = crypto.createHash('sha1');
-  values.push(fs.readFileSync(request.file.path));
+  values.push(fs.readFileSync(f));
   sha1.update(values.join('::'));
   return sha1.digest('hex') + '.png';
 };
@@ -191,7 +170,7 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'tmp', createFileName(request, params));
+  const dest = path.join(__dirname, 'tmp', createFileName(request.file.path, params));
   message.response = {sent:dest};
   delete message.error;
 
@@ -218,7 +197,7 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'tmp', createFileName(request, params));
+  const dest = path.join(__dirname, 'tmp', createFileName(request.file.path, params));
   message.response = {sent:dest};
   delete message.error;
 
@@ -251,3 +230,24 @@ app.use((error, request, response, next) => {
   response.status(500);
   response.json(message);
 });
+
+new CronJob(config.purge.cron, () => {
+  const dir = path.join(__dirname, 'tmp');
+  fs.readdir(dir, (error, files) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - config.purge.days);
+
+    files.filter(f => {
+      const stat = fs.statSync(path.join(__dirname, 'tmp', f));
+      return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday);
+    }).forEach(f => {
+      fs.unlink(path.join(dir, f), error => {
+        if (error) {
+          console.error('%j', {path:path.join(dir, f), message:error});
+        } else {
+          console.info('%j', {path:path.join(dir, f), message:'deleted'});
+        }
+      });
+    });
+  });
+}, null, true);
