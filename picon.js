@@ -36,7 +36,6 @@ new CronJob(config.purge.cron, () => {
 }, null, true);
 
 const app = express();
-app.use(express.static('www'));
 app.listen(config.server.port);
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
@@ -76,11 +75,6 @@ const sendImage = (response, filepath, params) => {
   }
 };
 
-const sendErrorImage = (response, status) => {
-  response.status(status || 400);
-  sendImage(response, path.join(__dirname, 'blank.png'), {});
-};
-
 const getType = filepath => {
   return filetype(fs.readFileSync(filepath)).mime;
 };
@@ -108,20 +102,14 @@ const isOfficeDocument = filepath => {
 
 const convertPDF = filepath => {
   return new Promise((resolve, reject) => {
-    let dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
+    const dest = path.join(__dirname, 'tmp', path.basename(filepath, '.png') + '.png');
     gm(filepath).write(dest, error => {
-      const names = [
+      [
         dest,
         path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
-      ];
-      dest = path.join(__dirname, 'www', path.basename(dest));
-
-      names.forEach(src => {
-        if (isExist(src)) {
-          fs.copyFile(src, dest, error => {
-            console.info('%j', {copied:dest});
-            resolve(dest);
-          })
+      ].forEach(name => {
+        if (isExist(name)) {
+          resolve(name);
         }
       })
     });
@@ -130,7 +118,7 @@ const convertPDF = filepath => {
 
 const convertVideo = filepath => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
+    const dest = path.join(__dirname, 'tmp', path.basename(filepath) + '.png');
     ffmpeg(filepath).screenshots({
       timemarks: [0],
       folder:path.dirname(dest),
@@ -143,7 +131,7 @@ const convertVideo = filepath => {
 
 const convertOfficeDocument = filepath => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'www', path.basename(filepath) + '.png');
+    const dest = path.join(__dirname, 'tmp', path.basename(filepath) + '.png');
     const command = [
       'libreoffice',
       '--headless',
@@ -190,7 +178,10 @@ app.post('/convert', upload.single('file'), (request, response, next) => {
       sendImage(response, dest, params);
     });
   } else {
-    sendErrorImage(response);
+    response.status(400);
+    message.error = 'invalid file';
+    console.error('%j', message);
+    response.json(message);
   }
 });
 
@@ -201,27 +192,25 @@ app.post('/resize', upload.single('file'), (request, response, next) => {
   params.height = (params.height || 100);
   params.background_color = (params.background_color || 'white');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'www', createFileName(request, params));
+  const dest = path.join(__dirname, 'tmp', createFileName(request, params));
   message.response = {sent:dest};
   delete message.error;
 
-  if (isExist(dest)) {
-    sendImage(response, dest, params);
-  } else {
-    gm(request.file.path)
-      .resize(params.width, params.height)
-      .gravity('Center')
-      .background(params.background_color)
-      .extent(params.width, params.height)
-      .write(dest, error => {
-        if (error) {
-          sendErrorImage(response);
-        } else {
-          console.info('%j', {created:dest});
-          sendImage(response, dest, params);
-        }
-      });
-  }
+  gm(request.file.path)
+    .resize(params.width, params.height)
+    .gravity('Center')
+    .background(params.background_color)
+    .extent(params.width, params.height)
+    .write(dest, error => {
+      if (error) {
+        response.status(400);
+        message.error = error;
+        console.error('%j', message);
+        response.json(message);
+      } else {
+        sendImage(response, dest, params);
+      }
+    });
 });
 
 app.post('/resize_width', upload.single('file'), (request, response, next) => {
@@ -230,22 +219,20 @@ app.post('/resize_width', upload.single('file'), (request, response, next) => {
   params.width = (params.width || 100);
   params.method = (params.method || 'resize');
   message.request = {params:params, path:request.path};
-  const dest = path.join(__dirname, 'www', createFileName(request, params));
+  const dest = path.join(__dirname, 'tmp', createFileName(request, params));
   message.response = {sent:dest};
   delete message.error;
 
-  if (isExist(dest)) {
-    sendImage(response, dest, params);
-  } else {
-    gm(request.file.path)[params.method](params.width, null).write(dest, error => {
-      if (error) {
-        sendErrorImage(response);
-      } else {
-        console.info('%j', {created:dest});
-        sendImage(response, dest, params);
-      }
-    });
-  }
+  gm(request.file.path)[params.method](params.width, null).write(dest, error => {
+    if (error) {
+      response.status(400);
+      message.error = error;
+      console.error('%j', message);
+      response.json(message);
+    } else {
+      sendImage(response, dest, params);
+    }
+  });
 });
 
 app.use((request, response, next) => {
@@ -253,7 +240,8 @@ app.use((request, response, next) => {
   message.response = {};
   message.error = 'Not Found';
   console.error('%j', message);
-  sendErrorImage(response, 404);
+  response.status(404);
+  response.json(message);
 });
 
 app.use((error, request, response, next) => {
@@ -261,5 +249,6 @@ app.use((error, request, response, next) => {
   message.response = {};
   message.error = error;
   console.error('%j', message);
-  sendErrorImage(response, 500);
+  response.status(500);
+  response.json(message);
 });
