@@ -13,7 +13,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const app = require('express')();
 const upload = require('multer')({dest: path.join(__dirname, 'tmp')});
 
-app.listen(config.server.port);
+app.listen(config.server.port, config.server.address);
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 );
