@@ -6,7 +6,7 @@
     "config": "^1.31.0",
     "cron": "^1.4.1",
     "crypt": "0.0.2",
-    "debug": "^3.1.0",
+    "debug": "^3.2.5",
     "express": "^4.16.3",
     "file-type": "^8.1.0",
     "fluent-ffmpeg": "^2.1.2",
