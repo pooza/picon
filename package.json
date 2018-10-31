@@ -4,7 +4,7 @@
   "dependencies": {
     "child_process": "^1.0.2",
     "config": "^1.31.0",
-    "cron": "^1.4.1",
+    "cron": "^1.5.0",
     "crypt": "0.0.2",
     "debug": "^3.2.6",
     "express": "^4.16.4",
