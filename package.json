@@ -17,7 +17,7 @@
     "multer": "^1.4.1",
     "path": "^0.12.7",
     "posix": "^4.1.2",
-    "qs": "^6.5.2",
+    "qs": "^6.6.0",
     "shell-escape": "^0.2.0"
   },
   "description": "Web API for resizing images",
