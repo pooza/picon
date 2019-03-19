@@ -15,7 +15,7 @@ jake.task('start', () => {
     '--name=' + shellescape([config.package.name]),
   ].join(' ');
   exec(command);
-  console.log(command);
+  console.info(command);
 });
 
 jake.task('stop', () => {
@@ -24,7 +24,7 @@ jake.task('stop', () => {
     shellescape([config.package.name]),
   ].join(' ');
   exec(command);
-  console.log(command);
+  console.info(command);
 });
 
 jake.task('restart', () => {
@@ -33,5 +33,5 @@ jake.task('restart', () => {
     shellescape([config.package.name]),
   ].join(' ');
   exec(command);
-  console.log(command);
+  console.info(command);
 });
