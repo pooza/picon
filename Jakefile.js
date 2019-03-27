@@ -35,3 +35,11 @@ jake.task('restart', () => {
   exec(command);
   console.info(command);
 });
+
+jake.task('lint', () => {
+  const command = [
+    'jslint', '*.js',
+  ].join(' ');
+  exec(command);
+  console.info(command);
+});
