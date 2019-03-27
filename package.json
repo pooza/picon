@@ -13,11 +13,11 @@
     "gm": "^1.23.1",
     "ipaddr.js": "^1.9.0",
     "jake": "^8.1.1",
-    "js-yaml": "^3.12.2",
+    "js-yaml": "^3.13.0",
     "multer": "^1.4.1",
     "path": "^0.12.7",
     "posix": "^4.1.2",
-    "qs": "^6.6.0",
+    "qs": "^6.7.0",
     "shell-escape": "^0.2.0"
   },
   "description": "Web API for resizing images",
