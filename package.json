@@ -7,7 +7,7 @@
     "cron": "^1.7.1",
     "crypt": "0.0.2",
     "debug": "^3.2.6",
-    "express": "^4.17.0",
+    "express": "^4.17.1",
     "file-type": "^8.1.0",
     "fluent-ffmpeg": "^2.1.2",
     "gm": "^1.23.1",
