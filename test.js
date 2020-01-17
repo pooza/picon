@@ -44,7 +44,7 @@ requestPaths.forEach(requestPath => {
   });
 });
 
-exts = ['flv', 'mp4', 'pdf']
+exts = ['pdf']
 requestPaths = ['/convert']
 
 requestPaths.forEach(requestPath => {
