@@ -8,12 +8,22 @@ const app = request('http://localhost:' + config.server.port)
 app.get('/notfound')
   .expect(404)
   .expect('Content-Type', /json/)
-  .catch(err => {throw err})
+  .then(e => {
+    console.info('/notfound OK')
+  }).catch(e => {
+    console.error(e.message)
+    process.exit(1)
+  })
 
 app.get('/about')
   .expect(200)
   .expect('Content-Type', /json/)
-  .catch(err => {throw err})
+  .then(e => {
+    console.info('/about OK')
+  }).catch(e => {
+    console.error(e.message)
+    process.exit(1)
+  })
 
 const dir = path.join(__dirname, 'sample')
 
