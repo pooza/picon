@@ -9,8 +9,6 @@ jobs:
       - run:
           command: npm install
       - run:
-          command: sudo apt install --fix-missing ffmpeg
-      - run:
           command: sudo npm install -g pm2
       - run:
           command: npm run lint
