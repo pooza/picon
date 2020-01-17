@@ -9,9 +9,9 @@ jobs:
       - run:
           command: npm install
       - run:
-          command: sudo npm install pm2
+          command: npm install pm2
       - run:
-          command: sudo npm run lint
+          command: npm run lint
       - run:
           command: npx pm2 start picon.js
       - run:
