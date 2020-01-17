@@ -5,28 +5,28 @@
     "child_process": "^1.0.2",
     "config": "^1.31.0",
     "cron": "^1.7.2",
-    "crypt": "0.0.2",
-    "debug": "^3.2.6",
+    "crypto": "^1.0.1",
     "express": "^4.17.1",
     "file-type": "^8.1.0",
     "fluent-ffmpeg": "^2.1.2",
     "gm": "^1.23.1",
-    "ipaddr.js": "^1.9.1",
-    "jake": "^8.1.1",
     "js-yaml": "^3.13.1",
     "multer": "^1.4.2",
     "path": "^0.12.7",
-    "posix": "^4.1.2",
-    "qs": "^6.9.1",
     "shell-escape": "^0.2.0"
   },
   "description": "Web API for resizing images",
   "main": "picon.js",
   "devDependencies": {
-    "eslint": "^5.16.0"
+    "eslint": "^5.16.0",
+    "supertest": "^4.0.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "npx eslint *.js",
+    "restart": "pm2 restart picon",
+    "start": "pm2 start picon.js --name=picon",
+    "stop": "pm2 stop picon",
+    "test": "node test.js"
   },
   "repository": {
     "type": "git",
