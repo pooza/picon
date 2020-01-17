@@ -6,8 +6,8 @@ jobs:
     working_directory: ~/repos
     steps:
       - checkout
-      #- run:
-      #    command: sudo apt install ffmpeg
+      - run:
+          command: sudo apt install ffmpeg
       - run:
           command: npm install
       - run:
