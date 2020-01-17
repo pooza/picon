@@ -27,6 +27,7 @@ requestPaths.forEach(requestPath => {
     .then(e => {console.info(requestPath + ' (empty) OK')})
     .catch(e => {
       console.error(e.message)
+      console.error(requestPath + ' (empty) NG')
       process.exit(1)
     })
 
@@ -39,6 +40,7 @@ requestPaths.forEach(requestPath => {
       .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
       .catch(e => {
         console.error(e.message)
+        console.error(requestPath + ' ' + ext + ' NG')
         process.exit(1)
       })
   });
@@ -54,6 +56,7 @@ requestPaths.forEach(requestPath => {
     .then(e => {console.info(requestPath + ' (empty) OK')})
     .catch(e => {
       console.error(e.message)
+      console.error(requestPath + ' (empty) NG')
       process.exit(1)
     })
 
@@ -66,6 +69,7 @@ requestPaths.forEach(requestPath => {
       .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
       .catch(e => {
         console.error(e.message)
+        console.error(requestPath + ' ' + ext + ' NG')
         process.exit(1)
       })
   });
