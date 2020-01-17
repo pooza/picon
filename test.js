@@ -24,8 +24,9 @@ requestPaths.forEach(requestPath => {
   app.post(requestPath)
     .expect(400)
     .expect('Content-Type', /json/)
-    .then(e => {console.info(requestPath + ' (empty) OK')})
-    .catch(e => {
+    .then(e => {
+      console.info(requestPath + ' (empty) OK')
+    }).catch(e => {
       console.error(e.message)
       console.error(requestPath + ' (empty) NG')
       process.exit(1)
@@ -37,8 +38,9 @@ requestPaths.forEach(requestPath => {
       .attach('file', filePath)
       .expect(200)
       .expect('Content-Type', /png/)
-      .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
-      .catch(e => {
+      .then(e => {
+        console.info(requestPath + ' ' + ext + ' OK')
+      }).catch(e => {
         console.error(e.message)
         console.error(requestPath + ' ' + ext + ' NG')
         process.exit(1)
@@ -46,15 +48,16 @@ requestPaths.forEach(requestPath => {
   });
 });
 
-exts = ['pdf']
+exts = ['pdf', 'flv', 'mp4']
 requestPaths = ['/convert']
 
 requestPaths.forEach(requestPath => {
   app.post(requestPath)
     .expect(400)
     .expect('Content-Type', /json/)
-    .then(e => {console.info(requestPath + ' (empty) OK')})
-    .catch(e => {
+    .then(e => {
+      console.info(requestPath + ' (empty) OK')
+    }).catch(e => {
       console.error(e.message)
       console.error(requestPath + ' (empty) NG')
       process.exit(1)
@@ -66,8 +69,9 @@ requestPaths.forEach(requestPath => {
       .attach('file', filePath)
       .expect(200)
       .expect('Content-Type', /png/)
-      .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
-      .catch(e => {
+      .then(e => {
+        console.info(requestPath + ' ' + ext + ' OK')
+      }).catch(e => {
         console.error(e.message)
         console.error(requestPath + ' ' + ext + ' NG')
         process.exit(1)
