@@ -7,8 +7,6 @@ jobs:
     steps:
       - checkout
       - run:
-          command: sudo apt install ffmpeg
-      - run:
           command: npm install
       - run:
           command: npm start
