@@ -1,0 +1,12 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:11
+    working_directory: ~/repos
+    steps:
+      - checkout
+      - run:
+          command: npm install
+      - run:
+          command: npm run lint
