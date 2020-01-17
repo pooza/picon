@@ -9,7 +9,7 @@ jobs:
       - run:
           command: npm install
       - run:
-          command: sudo npm -g pm2
+          command: sudo npm -g install pm2
       - run:
           command: npm start
       - run:
