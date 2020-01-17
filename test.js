@@ -25,7 +25,10 @@ requestPaths.forEach(requestPath => {
     .expect(400)
     .expect('Content-Type', /json/)
     .then(e => {console.info(requestPath + ' (empty) OK')})
-    .catch(e => {throw e})
+    .catch(e => {
+      console.error(e.message)
+      process.exit(1)
+    })
 
   exts.forEach(ext => {
     const filePath = path.join(dir, 'sample.' + ext)
@@ -34,7 +37,10 @@ requestPaths.forEach(requestPath => {
       .expect(200)
       .expect('Content-Type', /png/)
       .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
-      .catch(e => {throw e})
+      .catch(e => {
+        console.error(e.message)
+        process.exit(1)
+      })
   });
 });
 
@@ -46,7 +52,10 @@ requestPaths.forEach(requestPath => {
     .expect(400)
     .expect('Content-Type', /json/)
     .then(e => {console.info(requestPath + ' (empty) OK')})
-    .catch(e => {throw e})
+    .catch(e => {
+      console.error(e.message)
+      process.exit(1)
+    })
 
   exts.forEach(ext => {
     const filePath = path.join(dir, 'sample.' + ext)
@@ -55,6 +64,9 @@ requestPaths.forEach(requestPath => {
       .expect(200)
       .expect('Content-Type', /png/)
       .then(e => {console.info(requestPath + ' ' + ext + ' OK')})
-      .catch(e => {throw e})
+      .catch(e => {
+        console.error(e.message)
+        process.exit(1)
+      })
   });
 });
