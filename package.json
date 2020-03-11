@@ -18,7 +18,7 @@
   "description": "Web API for resizing images",
   "main": "picon.js",
   "devDependencies": {
-    "eslint": "^5.16.0",
+    "eslint": "^6.8.0",
     "supertest": "^4.0.2"
   },
   "scripts": {
