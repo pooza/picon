@@ -1,0 +1,22 @@
+name: test
+on:
+  - push
+env:
+  CI: "true"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup Ruby 2.7
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: |
+          npm install pm2
+          npm install
+      - run: npm start
+      - run: npm test
