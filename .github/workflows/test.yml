@@ -16,11 +16,16 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - run: |
-          sudo apt install ubuntu-restricted-extras
+      - name: apt install
+        run: |
+          sudo apt install imagemagick
           sudo apt install ffmpeg
-      - run: |
-          npm install pm2
+      - name: npm install
+        run: |
+          #npm install pm2
           npm install
-      - run: npm start
+      - name: npm start
+        run: |
+          #npm start
+          node picon.js &
       - run: npm test
