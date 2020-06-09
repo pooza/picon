@@ -1,13 +1,13 @@
 {
   "name": "picon",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "dependencies": {
     "child_process": "^1.0.2",
     "config": "^3.3.1",
     "cron": "^1.8.2",
     "crypto": "^1.0.1",
     "express": "^4.17.1",
-    "file-type": "^12.0.0",
+    "file-type": "^12.4.2",
     "fluent-ffmpeg": "^2.1.2",
     "gm": "^1.23.1",
     "js-yaml": "^3.14.0",
@@ -20,7 +20,7 @@
   "description": "Web API for resizing images",
   "main": "picon.js",
   "devDependencies": {
-    "eslint": "^7.1.0",
+    "eslint": "^7.2.0",
     "supertest": "^4.0.2"
   },
   "scripts": {
