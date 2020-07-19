@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "dependencies": {
     "child_process": "^1.0.2",
     "config": "^3.3.1",
