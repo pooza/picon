@@ -7,7 +7,7 @@
     "cron": "^1.8.2",
     "crypto": "^1.0.1",
     "express": "^4.17.1",
-    "file-type": "^12.4.2",
+    "file-type": "^16.5.4",
     "fluent-ffmpeg": "^2.1.2",
     "gm": "^1.23.1",
     "js-yaml": "^3.14.0",
