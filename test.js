@@ -37,6 +37,21 @@ app.get('/about')
     process.exit(1)
   })
 
+// ImageMagick に読み方を推測させないため、画像の口は画像の形式だけを受ける
+;['/resize', '/resize_width'].forEach(requestPath => {
+  app.post(requestPath)
+    .attach('file', path.join(__dirname, 'sample/sample.svg'))
+    .expect(400)
+    .expect('Content-Type', /json/)
+    .then(e => {
+      console.info('OK (svg) ' + requestPath)
+    }).catch(e => {
+      console.error(e.message)
+      console.info('NG (svg) ' + requestPath)
+      process.exit(1)
+    })
+})
+
 entries.forEach(entry => {
   entry.requestPaths.forEach(requestPath => {
     app.post(requestPath)

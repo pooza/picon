@@ -23,10 +23,15 @@ console.info('%j', {
 })
 
 class PiconError extends Error {
-  constructor(status, message) {
+  constructor(status, message, detail) {
     super(message)
     this.status = status
+    this.detail = detail
   }
+}
+
+const conversionFailed = error => {
+  return new PiconError(400, 'Conversion failed', String(error.message || error))
 }
 
 const createFileName = (f, params) => {
@@ -67,7 +72,7 @@ const writeImage = (image, dest) => {
   return new Promise((resolve, reject) => {
     image.write(dest, error => {
       if (error) {
-        reject(new PiconError(400, String(error.message || error)))
+        reject(conversionFailed(error))
       } else {
         resolve(dest)
       }
@@ -100,7 +105,7 @@ const convertVideo = f => {
       console.info('%j', {action: 'convert', type: 'video', src: f, dest: dest})
       resolve(dest)
     }).on('error', (error, stdout, stderr) => {
-      reject(new PiconError(400, error.message))
+      reject(conversionFailed(error))
     })
   })
 }
@@ -118,13 +123,20 @@ const convertOfficeDocument = f => {
     ]
     execFile('libreoffice', args, (error, stdout, stderr) => {
       if (error) {
-        reject(new PiconError(400, error.message))
+        reject(conversionFailed(error))
       } else {
         console.info('%j', {action: 'convert', type: 'office', src: f, dest: dest})
         resolve(dest)
       }
     })
   })
+}
+
+const assertImage = async f => {
+  const type = await getType(f)
+  if (!config.image.types.includes(type)) {
+    throw new PiconError(400, 'Invalid file type')
+  }
 }
 
 app.get('/about', (request, response) => {
@@ -164,6 +176,7 @@ app.post('/resize', upload.single('file'), async (request, response) => {
   }
 
   const params = Object.assign({}, request.body)
+  await assertImage(request.file.path)
   params.function = 'resize'
   params.width = (params.width || 100)
   params.height = (params.height || 100)
@@ -190,6 +203,7 @@ app.post('/resize_width', upload.single('file'), async (request, response) => {
   }
 
   const params = Object.assign({}, request.body)
+  await assertImage(request.file.path)
   params.function = 'resize_width'
   params.width = (params.width || 100)
   params.method = (params.method || 'resize')
@@ -221,7 +235,7 @@ app.use((error, request, response, next) => {
     response: {},
     error: {status: error.status || 500, message: error.message},
   }
-  console.error('%j', message)
+  console.error('%j', {...message, detail: error.detail || error.stack})
   response.status(message.error.status)
   response.json(message)
 })
@@ -236,12 +250,16 @@ new CronJob(config.purge.cron, () => {
     yesterday.setDate(yesterday.getDate() - config.purge.days)
 
     files.filter(f => {
-      const stat = fs.statSync(path.join(tmpDir, f))
-      return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday)
+      try {
+        const stat = fs.statSync(path.join(tmpDir, f))
+        return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday)
+      } catch (error) {
+        return false
+      }
     }).forEach(f => {
       fs.unlink(path.join(tmpDir, f), error => {
         if (error) {
-          console.error('%j', {path: path.join(tmpDir, f), error: error})
+          console.error('%j', {path: path.join(tmpDir, f), error: error.message})
         } else {
           console.info('%j', {path: path.join(tmpDir, f), action: 'delete'})
         }

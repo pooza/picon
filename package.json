@@ -18,10 +18,8 @@
     "supertest": "^7.1.4"
   },
   "scripts": {
-    "lint": "npx eslint *.js",
-    "restart": "pm2 restart picon",
-    "start": "pm2 start picon.js --name=picon",
-    "stop": "pm2 stop picon",
+    "lint": "eslint *.js",
+    "start": "node picon.js",
     "test": "node test.js"
   },
   "repository": {
