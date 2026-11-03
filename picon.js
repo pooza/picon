@@ -4,25 +4,35 @@ const config = require('config').config
 const fs = require('fs')
 const crypto = require('crypto')
 const path = require('path')
-const exec = require('child_process').exec
-const shellescape = require('shell-escape')
-const filetype = require('file-type')
+const {execFile} = require('child_process')
 const {CronJob} = require('cron')
 const gm = require('gm').subClass({imageMagick: true})
 const ffmpeg = require('fluent-ffmpeg')
 const app = require('express')()
-const upload = require('multer')({dest: path.join(__dirname, 'tmp')})
+const tmpDir = path.join(__dirname, 'tmp')
+const upload = require('multer')({dest: tmpDir})
 
 app.listen(config.server.port, config.server.address)
 config.package = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
 )
-const message = {request: {}, response: {}}
 console.info('%j', {
   message: 'starting...',
   package: {name: config.package.name, version: config.package.version},
   server: {port: config.server.port},
 })
+
+class PiconError extends Error {
+  constructor(status, message, detail) {
+    super(message)
+    this.status = status
+    this.detail = detail
+  }
+}
+
+const conversionFailed = error => {
+  return new PiconError(400, 'Conversion failed', String(error.message || error))
+}
 
 const createFileName = (f, params) => {
   const values = []
@@ -36,20 +46,17 @@ const createFileName = (f, params) => {
   return sha1.digest('hex') + '.png'
 }
 
-const sendImage = (response, f, params) => {
-  fs.readFile(f, (error, contents) => {
-    if (error) {
-      throw new Error(error)
-    } else {
-      console.info('%j', message)
-      response.header('Content-Type', 'image/png')
-      response.end(contents)
-    }
-  })
+const sendImage = async (response, f, message) => {
+  const contents = await fs.promises.readFile(f)
+  console.info('%j', message)
+  response.header('Content-Type', 'image/png')
+  response.end(contents)
 }
 
-const getType = f => {
-  return filetype(fs.readFileSync(f)).mime
+const getType = async f => {
+  const {fileTypeFromFile} = await import('file-type')
+  const type = await fileTypeFromFile(f)
+  return type ? type.mime : null
 }
 
 const isExist = f => {
@@ -61,42 +68,35 @@ const isExist = f => {
   }
 }
 
-const isPDF = f => {
-  return getType(f) == 'application/pdf'
-}
-
-const isVideo = f => {
-  return config.video.types.indexOf(getType(f)) != -1
-}
-
-const isOfficeDocument = f => {
-  return config.office.types.indexOf(getType(f)) != -1
-}
-
-const convertPDF = f => {
+const writeImage = (image, dest) => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(f, '.png') + '.png')
-    gm(f).write(dest, error => {
+    image.write(dest, error => {
       if (error) {
-        message.error = {status: 400, message: error}
-        throw new Error(message.error.message)
+        reject(conversionFailed(error))
+      } else {
+        resolve(dest)
       }
-      [
-        dest,
-        path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
-      ].forEach(name => {
-        if (isExist(name)) {
-          console.info('%j', {action: 'convert', type: 'pdf', src: f, dest: name})
-          resolve(name)
-        }
-      })
     })
   })
 }
 
+const convertPDF = async f => {
+  const dest = path.join(tmpDir, path.basename(f, '.png') + '.png')
+  await writeImage(gm(f), dest)
+  const name = [
+    dest,
+    path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png'),
+  ].find(isExist)
+  if (!name) {
+    throw new PiconError(400, 'PDF was not converted')
+  }
+  console.info('%j', {action: 'convert', type: 'pdf', src: f, dest: name})
+  return name
+}
+
 const convertVideo = f => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(f) + '.png')
+    const dest = path.join(tmpDir, path.basename(f) + '.png')
     ffmpeg(f).screenshots({
       timemarks: [0],
       folder: path.dirname(dest),
@@ -105,28 +105,25 @@ const convertVideo = f => {
       console.info('%j', {action: 'convert', type: 'video', src: f, dest: dest})
       resolve(dest)
     }).on('error', (error, stdout, stderr) => {
-      message.error = {status: 400, message: error}
-      throw new Error(message.error.message)
+      reject(conversionFailed(error))
     })
   })
 }
 
 const convertOfficeDocument = f => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(__dirname, 'tmp', path.basename(f) + '.png')
-    const command = [
-      'libreoffice',
+    const dest = path.join(tmpDir, path.basename(f) + '.png')
+    const args = [
       '--headless',
       '--nologo',
       '--nofirststartwizard',
       '--convert-to', 'png',
-      '--outdir', shellescape([path.dirname(dest)]),
-      shellescape([f]),
-    ].join(' ')
-    exec(command, (error, stdout, stderr) => {
+      '--outdir', path.dirname(dest),
+      f,
+    ]
+    execFile('libreoffice', args, (error, stdout, stderr) => {
       if (error) {
-        message.error = {status: 400, message: error}
-        throw new Error(message.error.message)
+        reject(conversionFailed(error))
       } else {
         console.info('%j', {action: 'convert', type: 'office', src: f, dest: dest})
         resolve(dest)
@@ -135,11 +132,15 @@ const convertOfficeDocument = f => {
   })
 }
 
-app.get('/about', (request, response, next) => {
-  message.request = {path: request.path}
-  message.response = {}
-  delete message.error
-  console.info('%j', message)
+const assertImage = async f => {
+  const type = await getType(f)
+  if (!config.image.types.includes(type)) {
+    throw new PiconError(400, 'Invalid file type')
+  }
+}
+
+app.get('/about', (request, response) => {
+  console.info('%j', {request: {path: request.path}, response: {}})
   response.json({
     package: config.package,
     config: config.server,
@@ -147,122 +148,120 @@ app.get('/about', (request, response, next) => {
   })
 })
 
-app.post('/convert', upload.single('file'), (request, response, next) => {
+app.post('/convert', upload.single('file'), async (request, response) => {
   const params = Object.assign({}, request.body)
   params.function = 'convert'
-  message.request = {path: request.path}
-  delete message.error
+  const message = {request: {path: request.path}, response: {}}
 
   if (!request.file) {
-    message.error = {status: 400, message: 'File was not posted'}
-    throw new Error(message.error.message)
-  } else if (isPDF(request.file.path)) {
-    convertPDF(request.file.path).then(dest => {
-      sendImage(response, dest, params)
-    })
-  } else if (isVideo(request.file.path)) {
-    convertVideo(request.file.path).then(dest => {
-      sendImage(response, dest, params)
-    })
-  } else if (isOfficeDocument(request.file.path)) {
-    convertOfficeDocument(request.file.path).then(dest => {
-      sendImage(response, dest, params)
-    })
-  } else {
-    message.error = {status: 400, message: 'Invalid file type'}
-    throw new Error(message.error.message)
+    throw new PiconError(400, 'File was not posted')
   }
+  const type = await getType(request.file.path)
+  let dest
+  if (type == 'application/pdf') {
+    dest = await convertPDF(request.file.path)
+  } else if (config.video.types.includes(type)) {
+    dest = await convertVideo(request.file.path)
+  } else if (config.office.types.includes(type)) {
+    dest = await convertOfficeDocument(request.file.path)
+  } else {
+    throw new PiconError(400, 'Invalid file type')
+  }
+  await sendImage(response, dest, message)
 })
 
-app.post('/resize', upload.single('file'), (request, response, next) => {
+app.post('/resize', upload.single('file'), async (request, response) => {
   if (!request.file) {
-    message.error = {status: 400, message: 'File was not posted'}
-    throw new Error(message.error.message)
+    throw new PiconError(400, 'File was not posted')
   }
 
   const params = Object.assign({}, request.body)
+  await assertImage(request.file.path)
   params.function = 'resize'
   params.width = (params.width || 100)
   params.height = (params.height || 100)
   params.background_color = (params.background_color || 'white')
-  message.request = {params: params, path: request.path}
-  const dest = path.join(__dirname, 'tmp', createFileName(request.file.path, params))
-  delete message.error
+  const message = {request: {params: params, path: request.path}}
+  const dest = path.join(tmpDir, createFileName(request.file.path, params))
 
-  gm(request.file.path)
-    .resize(params.width, params.height)
-    .gravity('Center')
-    .background(params.background_color)
-    .extent(params.width, params.height)
-    .write(dest, error => {
-      if (error) {
-        message.error = {status: 400, message: error}
-        throw new Error(message.error.message)
-      } else {
-        message.response = {action: 'resize', sent: dest}
-        sendImage(response, dest, params)
-      }
-    })
+  await writeImage(
+    gm(request.file.path)
+      .noProfile()
+      .resize(params.width, params.height)
+      .gravity('Center')
+      .background(params.background_color)
+      .extent(params.width, params.height),
+    dest
+  )
+  message.response = {action: 'resize', sent: dest}
+  await sendImage(response, dest, message)
 })
 
-app.post('/resize_width', upload.single('file'), (request, response, next) => {
+app.post('/resize_width', upload.single('file'), async (request, response) => {
   if (!request.file) {
-    message.error = {status: 400, message: 'File was not posted'}
-    throw new Error(message.error.message)
+    throw new PiconError(400, 'File was not posted')
   }
 
   const params = Object.assign({}, request.body)
+  await assertImage(request.file.path)
   params.function = 'resize_width'
   params.width = (params.width || 100)
   params.method = (params.method || 'resize')
-  message.request = {params: params, path: request.path}
-  const dest = path.join(__dirname, 'tmp', createFileName(request.file.path, params))
-  delete message.error
+  if (!['resize', 'thumbnail', 'sample', 'scale'].includes(params.method)) {
+    throw new PiconError(400, 'Invalid method')
+  }
+  const message = {request: {params: params, path: request.path}}
+  const dest = path.join(tmpDir, createFileName(request.file.path, params))
 
-  gm(request.file.path)[params.method](params.width, null).write(dest, error => {
-    if (error) {
-      message.error = {status: 400, message: error}
-      throw new Error(message.error.message)
-    } else {
-      message.response = {action: 'resize', sent: dest}
-      sendImage(response, dest, params)
-    }
-  })
+  await writeImage(gm(request.file.path).noProfile()[params.method](params.width, null), dest)
+  message.response = {action: 'resize', sent: dest}
+  await sendImage(response, dest, message)
 })
 
 app.use((request, response, next) => {
-  message.request = {params: request.query, path: request.path}
-  message.response = {}
-  message.error = {status: 404, message: 'Not found'}
+  const message = {
+    request: {params: request.query, path: request.path},
+    response: {},
+    error: {status: 404, message: 'Not found'},
+  }
   console.error('%j', message)
   response.status(message.error.status)
   response.json(message)
 })
 
 app.use((error, request, response, next) => {
-  message.request = {params: request.query, path: request.path}
-  message.response = {}
-  message.error = message.error || {status: 500, message: error.message}
-  console.error('%j', message)
+  const message = {
+    request: {params: request.query, path: request.path},
+    response: {},
+    error: {status: error.status || 500, message: error.message},
+  }
+  console.error('%j', {...message, detail: error.detail || error.stack})
   response.status(message.error.status)
   response.json(message)
 })
 
 new CronJob(config.purge.cron, () => {
-  const dir = path.join(__dirname, 'tmp')
-  fs.readdir(dir, (error, files) => {
+  fs.readdir(tmpDir, (error, files) => {
+    if (error) {
+      console.error('%j', {path: tmpDir, error: error.message})
+      return
+    }
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - config.purge.days)
 
     files.filter(f => {
-      const stat = fs.statSync(path.join(__dirname, 'tmp', f))
-      return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday)
+      try {
+        const stat = fs.statSync(path.join(tmpDir, f))
+        return stat.isFile() && !f.match(/^\./) && (stat.mtime < yesterday)
+      } catch (error) {
+        return false
+      }
     }).forEach(f => {
-      fs.unlink(path.join(dir, f), error => {
+      fs.unlink(path.join(tmpDir, f), error => {
         if (error) {
-          console.error('%j', {path: path.join(dir, f), error: error})
+          console.error('%j', {path: path.join(tmpDir, f), error: error.message})
         } else {
-          console.info('%j', {path: path.join(dir, f), action: 'delete'})
+          console.info('%j', {path: path.join(tmpDir, f), action: 'delete'})
         }
       })
     })

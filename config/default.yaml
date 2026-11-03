@@ -8,12 +8,24 @@ config:
   office:
     types:
       - application/x-msi
+      - application/x-cfb # file-type 21 以降は旧形式の .doc・.xls・.ppt をこう判定する
       - application/vnd.ms-excel
       - application/vnd.ms-word
       - application/vnd.ms-powerpoint
       - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
       - application/vnd.openxmlformats-officedocument.presentationml.presentation
+  image:
+    types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp
+      - image/bmp
+      - image/tiff
+      - image/heic # minc3 は素材として .heic を受ける
+      - image/heif
+      - image/avif
   video:
     types:
       - video/mp4
