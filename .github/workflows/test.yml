@@ -9,23 +9,22 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 10.x
-          - 12.x
+          - 20.x
+          - 22.x
+          - 24.x
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: apt install
         run: |
           sudo apt update
           sudo apt install imagemagick
-          sudo apt install ubuntu-restricted-extras
           sudo apt install ffmpeg
-      - name: npm install
-        run: |
-          npm install pm2
-          npm install
+      - run: yarn install --frozen-lockfile
       - run: npm run lint
-      - run: npm start
-      #- run: npm test
+      - run: |
+          node picon.js &
+          sleep 3
+          npm test
