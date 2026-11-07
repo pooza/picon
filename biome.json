@@ -2,5 +2,13 @@
   "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
   "extends": ["gobou/biome"],
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "includes": ["!sample"] }
+  "files": { "includes": ["!sample"] },
+  "linter": {
+    "rules": {
+      "suspicious": {
+        "noRedundantUseStrict": "off",
+        "noDoubleEquals": "warn"
+      }
+    }
+  }
 }
