@@ -1,9 +1,9 @@
-'use strict'
+'use strict';
 
-const request = require('supertest')
-const path = require('path')
-const config = require('config').config
-const app = request('http://localhost:' + config.server.port)
+const request = require('supertest');
+const path = require('path');
+const config = require('config').config;
+const app = request('http://localhost:' + config.server.port);
 const entries = [
   {
     requestPaths: ['/resize', '/resize_width'],
@@ -13,71 +13,81 @@ const entries = [
     requestPaths: ['/convert'],
     exts: ['pdf', 'flv', 'mp4'],
   },
-]
+];
 
-app.get('/notfound')
+app
+  .get('/notfound')
   .expect(404)
   .expect('Content-Type', /json/)
-  .then(e => {
-    console.info('OK /notfound')
-  }).catch(e => {
-    console.error(e.message)
-    console.info('NG /notfound')
-    process.exit(1)
+  .then((e) => {
+    console.info('OK /notfound');
   })
+  .catch((e) => {
+    console.error(e.message);
+    console.info('NG /notfound');
+    process.exit(1);
+  });
 
-app.get('/about')
+app
+  .get('/about')
   .expect(200)
   .expect('Content-Type', /json/)
-  .then(e => {
-    console.info('OK /about')
-  }).catch(e => {
-    console.error(e.message)
-    console.info('NG /about')
-    process.exit(1)
+  .then((e) => {
+    console.info('OK /about');
   })
+  .catch((e) => {
+    console.error(e.message);
+    console.info('NG /about');
+    process.exit(1);
+  });
 
 // ImageMagick に読み方を推測させないため、画像の口は画像の形式だけを受ける
-;['/resize', '/resize_width'].forEach(requestPath => {
-  app.post(requestPath)
+['/resize', '/resize_width'].forEach((requestPath) => {
+  app
+    .post(requestPath)
     .attach('file', path.join(__dirname, 'sample/sample.svg'))
     .expect(400)
     .expect('Content-Type', /json/)
-    .then(e => {
-      console.info('OK (svg) ' + requestPath)
-    }).catch(e => {
-      console.error(e.message)
-      console.info('NG (svg) ' + requestPath)
-      process.exit(1)
+    .then((e) => {
+      console.info('OK (svg) ' + requestPath);
     })
-})
+    .catch((e) => {
+      console.error(e.message);
+      console.info('NG (svg) ' + requestPath);
+      process.exit(1);
+    });
+});
 
-entries.forEach(entry => {
-  entry.requestPaths.forEach(requestPath => {
-    app.post(requestPath)
+entries.forEach((entry) => {
+  entry.requestPaths.forEach((requestPath) => {
+    app
+      .post(requestPath)
       .expect(400)
       .expect('Content-Type', /json/)
-      .then(e => {
-        console.info('OK (empty) ' + requestPath)
-      }).catch(e => {
-        console.error(e.message)
-        console.error('NG (empty) ' + requestPath)
-        process.exit(1)
+      .then((e) => {
+        console.info('OK (empty) ' + requestPath);
       })
+      .catch((e) => {
+        console.error(e.message);
+        console.error('NG (empty) ' + requestPath);
+        process.exit(1);
+      });
 
-    entry.exts.forEach(ext => {
-      const filePath = path.join(__dirname, 'sample/sample.' + ext)
-      app.post(requestPath)
+    entry.exts.forEach((ext) => {
+      const filePath = path.join(__dirname, 'sample/sample.' + ext);
+      app
+        .post(requestPath)
         .attach('file', filePath)
         .expect(200)
         .expect('Content-Type', /png/)
-        .then(e => {
-          console.info('OK .' + ext + ' ' + requestPath)
-        }).catch(e => {
-          console.error(e.message)
-          console.info('NG .' + ext + ' ' + requestPath)
-          process.exit(1)
+        .then((e) => {
+          console.info('OK .' + ext + ' ' + requestPath);
         })
+        .catch((e) => {
+          console.error(e.message);
+          console.info('NG .' + ext + ' ' + requestPath);
+          process.exit(1);
+        });
     });
   });
-})
+});

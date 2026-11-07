@@ -14,11 +14,13 @@
   "description": "Web API for resizing images",
   "main": "picon.js",
   "devDependencies": {
-    "eslint": "^8.57.1",
+    "@biomejs/biome": "2.6.6",
+    "gobou": "github:pooza/gobou#v0.2.0",
     "supertest": "^7.1.4"
   },
   "scripts": {
-    "lint": "eslint *.js",
+    "format": "biome check --write .",
+    "lint": "biome check .",
     "start": "node picon.js",
     "test": "node test.js"
   },
