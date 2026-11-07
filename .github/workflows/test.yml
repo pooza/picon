@@ -7,7 +7,8 @@ env:
   CI: "true"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest（ImageMagick 7.1.2・Ghostscript 10.06）では PDF の変換が Permission denied で落ちる（#187）。
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         node-version:
