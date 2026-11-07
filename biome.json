@@ -6,8 +6,7 @@
   "linter": {
     "rules": {
       "suspicious": {
-        "noRedundantUseStrict": "off",
-        "noDoubleEquals": "warn"
+        "noRedundantUseStrict": "off"
       }
     }
   }
