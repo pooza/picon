@@ -1,9 +1,9 @@
 'use strict';
 
 const request = require('supertest');
-const path = require('path');
+const path = require('node:path');
 const config = require('config').config;
-const app = request('http://localhost:' + config.server.port);
+const app = request(`http://localhost:${config.server.port}`);
 const entries = [
   {
     requestPaths: ['/resize', '/resize_width'],
@@ -19,7 +19,7 @@ app
   .get('/notfound')
   .expect(404)
   .expect('Content-Type', /json/)
-  .then((e) => {
+  .then(() => {
     console.info('OK /notfound');
   })
   .catch((e) => {
@@ -32,7 +32,7 @@ app
   .get('/about')
   .expect(200)
   .expect('Content-Type', /json/)
-  .then((e) => {
+  .then(() => {
     console.info('OK /about');
   })
   .catch((e) => {
@@ -48,12 +48,12 @@ app
     .attach('file', path.join(__dirname, 'sample/sample.svg'))
     .expect(400)
     .expect('Content-Type', /json/)
-    .then((e) => {
-      console.info('OK (svg) ' + requestPath);
+    .then(() => {
+      console.info(`OK (svg) ${requestPath}`);
     })
     .catch((e) => {
       console.error(e.message);
-      console.info('NG (svg) ' + requestPath);
+      console.info(`NG (svg) ${requestPath}`);
       process.exit(1);
     });
 });
@@ -64,28 +64,28 @@ entries.forEach((entry) => {
       .post(requestPath)
       .expect(400)
       .expect('Content-Type', /json/)
-      .then((e) => {
-        console.info('OK (empty) ' + requestPath);
+      .then(() => {
+        console.info(`OK (empty) ${requestPath}`);
       })
       .catch((e) => {
         console.error(e.message);
-        console.error('NG (empty) ' + requestPath);
+        console.error(`NG (empty) ${requestPath}`);
         process.exit(1);
       });
 
     entry.exts.forEach((ext) => {
-      const filePath = path.join(__dirname, 'sample/sample.' + ext);
+      const filePath = path.join(__dirname, `sample/sample.${ext}`);
       app
         .post(requestPath)
         .attach('file', filePath)
         .expect(200)
         .expect('Content-Type', /png/)
-        .then((e) => {
-          console.info('OK .' + ext + ' ' + requestPath);
+        .then(() => {
+          console.info(`OK .${ext} ${requestPath}`);
         })
         .catch((e) => {
           console.error(e.message);
-          console.info('NG .' + ext + ' ' + requestPath);
+          console.info(`NG .${ext} ${requestPath}`);
           process.exit(1);
         });
     });

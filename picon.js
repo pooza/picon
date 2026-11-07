@@ -1,10 +1,10 @@
 'use strict';
 
 const config = require('config').config;
-const fs = require('fs');
-const crypto = require('crypto');
-const path = require('path');
-const { execFile } = require('child_process');
+const fs = require('node:fs');
+const crypto = require('node:crypto');
+const path = require('node:path');
+const { execFile } = require('node:child_process');
 const { CronJob } = require('cron');
 const gm = require('gm').subClass({ imageMagick: true });
 const ffmpeg = require('fluent-ffmpeg');
@@ -41,7 +41,7 @@ const createFileName = (f, params) => {
   const sha1 = crypto.createHash('sha1');
   values.push(fs.readFileSync(f));
   sha1.update(values.join('::'));
-  return sha1.digest('hex') + '.png';
+  return `${sha1.digest('hex')}.png`;
 };
 
 const sendImage = async (response, f, message) => {
@@ -61,7 +61,7 @@ const isExist = (f) => {
   try {
     fs.statSync(f);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -79,9 +79,9 @@ const writeImage = (image, dest) => {
 };
 
 const convertPDF = async (f) => {
-  const dest = path.join(tmpDir, path.basename(f, '.png') + '.png');
+  const dest = path.join(tmpDir, `${path.basename(f, '.png')}.png`);
   await writeImage(gm(f), dest);
-  const name = [dest, path.join(path.dirname(dest), path.basename(dest, '.png') + '-0.png')].find(
+  const name = [dest, path.join(path.dirname(dest), `${path.basename(dest, '.png')}-0.png`)].find(
     isExist,
   );
   if (!name) {
@@ -93,18 +93,18 @@ const convertPDF = async (f) => {
 
 const convertVideo = (f) => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(tmpDir, path.basename(f) + '.png');
+    const dest = path.join(tmpDir, `${path.basename(f)}.png`);
     ffmpeg(f)
       .screenshots({
         timemarks: [0],
         folder: path.dirname(dest),
         filename: path.basename(dest),
       })
-      .on('end', (stdout, stderr) => {
+      .on('end', () => {
         console.info('%j', { action: 'convert', type: 'video', src: f, dest: dest });
         resolve(dest);
       })
-      .on('error', (error, stdout, stderr) => {
+      .on('error', (error) => {
         reject(conversionFailed(error));
       });
   });
@@ -112,7 +112,7 @@ const convertVideo = (f) => {
 
 const convertOfficeDocument = (f) => {
   return new Promise((resolve, reject) => {
-    const dest = path.join(tmpDir, path.basename(f) + '.png');
+    const dest = path.join(tmpDir, `${path.basename(f)}.png`);
     const args = [
       '--headless',
       '--nologo',
@@ -123,7 +123,7 @@ const convertOfficeDocument = (f) => {
       path.dirname(dest),
       f,
     ];
-    execFile('libreoffice', args, (error, stdout, stderr) => {
+    execFile('libreoffice', args, (error) => {
       if (error) {
         reject(conversionFailed(error));
       } else {
@@ -160,7 +160,7 @@ app.post('/convert', upload.single('file'), async (request, response) => {
   }
   const type = await getType(request.file.path);
   let dest;
-  if (type == 'application/pdf') {
+  if (type === 'application/pdf') {
     dest = await convertPDF(request.file.path);
   } else if (config.video.types.includes(type)) {
     dest = await convertVideo(request.file.path);
@@ -220,7 +220,7 @@ app.post('/resize_width', upload.single('file'), async (request, response) => {
   await sendImage(response, dest, message);
 });
 
-app.use((request, response, next) => {
+app.use((request, response) => {
   const message = {
     request: { params: request.query, path: request.path },
     response: {},
@@ -231,7 +231,8 @@ app.use((request, response, next) => {
   response.json(message);
 });
 
-app.use((error, request, response, next) => {
+// Express は引数が 4 つあることでエラーハンドラと見分けるので、使わない next も残す。
+app.use((error, request, response, _next) => {
   const message = {
     request: { params: request.query, path: request.path },
     response: {},
@@ -258,7 +259,7 @@ new CronJob(
           try {
             const stat = fs.statSync(path.join(tmpDir, f));
             return stat.isFile() && !f.match(/^\./) && stat.mtime < yesterday;
-          } catch (error) {
+          } catch {
             return false;
           }
         })
