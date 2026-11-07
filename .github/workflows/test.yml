@@ -4,7 +4,7 @@ on:
 permissions:
   contents: read
 env:
-  CI: "true"
+  CI: 'true'
 jobs:
   test:
     runs-on: ubuntu-latest
