@@ -476,9 +476,9 @@ gm@^1.25.1:
     cross-spawn "^7.0.5"
     debug "^3.1.0"
 
-"gobou@github:pooza/gobou#v0.2.0":
-  version "0.2.0"
-  resolved "https://codeload.github.com/pooza/gobou/tar.gz/11189e1008fa3653fba914213b83d18c74a4698c"
+"gobou@github:pooza/gobou#v0.4.0":
+  version "0.4.0"
+  resolved "https://codeload.github.com/pooza/gobou/tar.gz/1e0377f5d54b8b725e42e587f297fed6b75f8db4"
 
 gopd@^1.2.0:
   version "1.2.0"
