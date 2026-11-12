@@ -1,6 +1,6 @@
 {
   "name": "picon",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "dependencies": {
     "config": "^3.3.12",
     "cron": "^4.4.0",
