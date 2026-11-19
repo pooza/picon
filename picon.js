@@ -66,6 +66,50 @@ const isExist = (f) => {
   }
 };
 
+// sRGB の ICC プロファイル（lcms の sRGB。mulukhiya-toot-proxy と同じもの）
+const srgbProfile = path.join(__dirname, 'config/color/srgb.icc');
+
+// 埋め込みの ICC プロファイルがあるか
+const hasICCProfile = (f) => {
+  return new Promise((resolve) => {
+    gm(f).identify('%[profiles]', (error, value) => {
+      resolve(!error && /\bicc\b/i.test(String(value || '')));
+    });
+  });
+};
+
+// sRGB にそろえてから、プロファイルを捨てる。
+// これまでは .noProfile() でいきなり捨てていたので、Adobe RGB や Display P3、CMYK の画像は色味が変わった。
+// 埋め込みのプロファイルがあれば、そこから sRGB へ変換する（相対的な色域の合わせ方）。無ければ sRGB として扱う
+// （プロファイルの無い CMYK やグレースケールは、色空間を sRGB に変える）。大きさは変えない
+const toSRGB = (f, withProfile) => {
+  const image = gm(f);
+  if (withProfile) {
+    image.intent('Relative').profile(srgbProfile);
+  } else {
+    image.colorspace('sRGB');
+  }
+  return image.noProfile();
+};
+
+// sRGB にそろえて書き出す。build は大きさを変える処理。
+// 埋め込みのプロファイルが壊れていて変換に失敗したら、プロファイルを使わずにやり直す（ログに残す）
+const writeSRGBImage = async (f, build, dest) => {
+  if (await hasICCProfile(f)) {
+    try {
+      return await writeImage(build(toSRGB(f, true)), dest);
+    } catch (e) {
+      console.warn('%j', {
+        action: 'color',
+        src: f,
+        warning: 'ICC profile ignored',
+        detail: String(e.message || e),
+      });
+    }
+  }
+  return writeImage(build(toSRGB(f, false)), dest);
+};
+
 const writeImage = (image, dest) => {
   return new Promise((resolve, reject) => {
     image.write(dest, (error) => {
@@ -186,13 +230,14 @@ app.post('/resize', upload.single('file'), async (request, response) => {
   const message = { request: { params: params, path: request.path } };
   const dest = path.join(tmpDir, createFileName(request.file.path, params));
 
-  await writeImage(
-    gm(request.file.path)
-      .noProfile()
-      .resize(params.width, params.height)
-      .gravity('Center')
-      .background(params.background_color)
-      .extent(params.width, params.height),
+  await writeSRGBImage(
+    request.file.path,
+    (image) =>
+      image
+        .resize(params.width, params.height)
+        .gravity('Center')
+        .background(params.background_color)
+        .extent(params.width, params.height),
     dest,
   );
   message.response = { action: 'resize', sent: dest };
@@ -215,7 +260,11 @@ app.post('/resize_width', upload.single('file'), async (request, response) => {
   const message = { request: { params: params, path: request.path } };
   const dest = path.join(tmpDir, createFileName(request.file.path, params));
 
-  await writeImage(gm(request.file.path).noProfile()[params.method](params.width, null), dest);
+  await writeSRGBImage(
+    request.file.path,
+    (image) => image[params.method](params.width, null),
+    dest,
+  );
   message.response = { action: 'resize', sent: dest };
   await sendImage(response, dest, message);
 });
